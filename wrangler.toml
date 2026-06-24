@@ -31,7 +31,9 @@ class_name = "RoomDO"
 tag = "v1"
 new_sqlite_classes = ["RoomDO"]
 
-# Web Push (fase 2): la clave pública VAPID es un var normal; la privada y el
-# subject van como secrets (`wrangler secret put VAPID_PRIVATE` / VAPID_SUBJECT).
-# [vars]
-# VAPID_PUBLIC = "<se rellena en fase 2 al generar el par de claves>"
+# Web Push: la clave pública VAPID y el subject son públicos (van aquí). La
+# privada va como secret: `node tools/make-vapid.mjs` y luego
+# `cat /tmp/pspsps-vapid.json | jq -r .private | wrangler secret put VAPID_PRIVATE`.
+[vars]
+VAPID_PUBLIC = "BMr_wzw-Q9BZqXpKkinp6cQeFenpko2EB2seVQRVmzN-nJxDzImhuTk0-4M_IMkhkoZLEtIBvFz-Xcf2OkGJVUE"
+VAPID_SUBJECT = "mailto:hola@meowrhino.studio"

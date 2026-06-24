@@ -1,4 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
+import { sendPush } from "./push.js";
+
+// No reavisar por push a la misma persona más de una vez cada PUSH_THROTTLE ms
+// (una sala animada no debe disparar un push por cada mensaje).
+const PUSH_THROTTLE = 25000;
 
 // ── RoomDO — el MOTOR (una instancia por sala) ──────────────────────────────
 //
@@ -104,14 +109,28 @@ export class RoomDO extends DurableObject {
           color TEXT NOT NULL
         );
       `);
-      // Suscripciones Web Push de los miembros (fase 2). Se rellena con
-      // {type:"sub"}; el DO la usa para avisar a quien está sin WS activo.
+      // Suscripciones Web Push de los miembros. Se rellena con {type:"sub"}; el DO
+      // la usa para avisar a quien está sin WS activo. `lastPush` da el throttle.
       sql.exec(`
         CREATE TABLE IF NOT EXISTS subs (
           endpoint TEXT PRIMARY KEY,
           p256dh   TEXT NOT NULL,
           auth     TEXT NOT NULL,
-          name     TEXT
+          name     TEXT,
+          lastPush INTEGER NOT NULL DEFAULT 0
+        );
+      `);
+      // Migración para salas que crearon `subs` sin la columna lastPush.
+      try {
+        sql.exec("ALTER TABLE subs ADD COLUMN lastPush INTEGER NOT NULL DEFAULT 0");
+      } catch {
+        // ya existe
+      }
+      // Meta clave→valor (guardamos el id de sala para el payload del push).
+      sql.exec(`
+        CREATE TABLE IF NOT EXISTS meta (
+          k TEXT PRIMARY KEY,
+          v TEXT NOT NULL
         );
       `);
     });
@@ -134,6 +153,15 @@ export class RoomDO extends DurableObject {
     // Cursor de backfill: el cliente manda el `seq` más alto que ya tiene en su
     // IndexedDB para esta sala. 0/ausente → le mandamos el snapshot reciente.
     const since = Math.max(0, parseInt(url.searchParams.get("since") || "0", 10) || 0);
+
+    // Recuerda el id de sala (lo usa el payload del push) la primera vez.
+    const room = url.searchParams.get("room");
+    if (room) {
+      this.ctx.storage.sql.exec(
+        "INSERT INTO meta (k, v) VALUES ('roomId', ?) ON CONFLICT(k) DO NOTHING",
+        room,
+      );
+    }
 
     // Fija el color solo la primera vez que aparece este alias.
     this.touchProfile(name, color);
@@ -281,8 +309,36 @@ export class RoomDO extends DurableObject {
     this.ctx.storage.sql.exec("DELETE FROM messages WHERE seq <= ?", seq - MAX_MESSAGES);
     this.broadcast(JSON.stringify({ type: "msg", seq, id, author, ts, blob, kind: "user" }));
 
-    // fase 2 · web push: avisar a miembros suscritos sin WS activo.
-    // this.notifyOffline(author);
+    // Avisa por Web Push a los miembros suscritos sin WS activo (en segundo
+    // plano: no bloquea la difusión, pero waitUntil garantiza que termina).
+    this.ctx.waitUntil(this.notifyOffline());
+  }
+
+  // Dispara Web Push a cada suscripción cuyo dueño no está conectado ahora mismo.
+  async notifyOffline() {
+    if (!this.env.VAPID_PRIVATE) return; // push no configurado → nada que hacer
+    const online = new Set(this.onlineNames());
+    const now = Date.now();
+    const roomId =
+      this.ctx.storage.sql.exec("SELECT v FROM meta WHERE k = 'roomId'").toArray()[0]?.v || "";
+    const subs = this.ctx.storage.sql
+      .exec("SELECT endpoint, p256dh, auth, name, lastPush FROM subs")
+      .toArray();
+    for (const s of subs) {
+      if (s.name && online.has(s.name)) continue; // está en la sala, ya lo ve
+      if (s.lastPush && now - s.lastPush < PUSH_THROTTLE) continue; // throttle
+      // marca antes de enviar para que mensajes en ráfaga no dupliquen el push
+      this.ctx.storage.sql.exec("UPDATE subs SET lastPush = ? WHERE endpoint = ?", now, s.endpoint);
+      try {
+        const status = await sendPush(this.env, s, { sala: roomId });
+        // suscripción caducada/baja → bórrala para no reintentar
+        if (status === 404 || status === 410) {
+          this.ctx.storage.sql.exec("DELETE FROM subs WHERE endpoint = ?", s.endpoint);
+        }
+      } catch {
+        /* fallo de red puntual; se reintentará en el próximo mensaje */
+      }
+    }
   }
 
   // Manda un objeto solo a los sockets cuyo alias coincide (el emisor).
