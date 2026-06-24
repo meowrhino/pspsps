@@ -3,11 +3,12 @@
 Fases incrementales. Cada una deja algo **funcionando y desplegable**. No saltes fases.
 Marca `[x]` al completar y commitea la actualización de este archivo.
 
-> **Estado (2026-06-24):** fases **0 y 1 completas y verificadas** end-to-end en
-> navegador real (identidad, salas, invitaciones, realtime 2-personas, offline-first,
-> reconexión por cursor). El **cifrado AES-GCM zero-knowledge** se adelantó: está activo
-> desde el primer mensaje (no se mandó nunca texto plano). Pendiente: deploy a producción
-> y fase 2 (Web Push).
+> **Estado (2026-06-24):** fases **0, 1 y 2 completas y desplegadas** en
+> `https://pspsps.meowrhino.studio`. Verificado end-to-end: identidad, salas, invitaciones,
+> realtime 2-personas, offline-first, reconexión por cursor, **cifrado AES-GCM zero-knowledge**
+> (activo desde el primer mensaje) y **Web Push** (VAPID + aes128gcm hechos a mano, cripto
+> auto-verificado). Único pendiente de fase 2: **probar el push en un iPhone/Android real**.
+> Siguiente: fase 3 (cifrado fuerte NIP-44) cuando se quiera.
 >
 > **Decisiones de implementación** (desvían de la *propuesta* original con motivo):
 > - **Deploy unificado** estilo rumrum: un solo Worker sirve `public/` (assets) + `/ws`
@@ -54,17 +55,18 @@ Marca `[x]` al completar y commitea la actualización de este archivo.
 - [x] cifrar antes de enviar / descifrar al recibir; el DO solo guarda blobs opacos
 - [x] verificado: lo que el servidor almacena es ciphertext; otro cliente con la clave lo descifra
 
-## fase 2 — offline de verdad (push) ⏳ (siguiente)
+## fase 2 — offline de verdad (push) ✅ (hecha, falta probar en dispositivo)
 > objetivo: el requisito innegociable. B escribe a A (offline) y A recibe notificación.
 
-- [ ] generar par de claves VAPID (una vez) y guardarlas como secrets del Worker
-- [ ] `push.js` cliente: pedir permiso, suscribirse, mandar `{endpoint,p256dh,auth}` al DO (ya hay `{t:"sub"}` en el protocolo)
-- [ ] `worker/src/push.js`: firmar JWT VAPID + POST cifrado al endpoint
-- [ ] DO dispara push a miembros sin WS activo cuando llega un `msg` (hook ya marcado en `room.js`)
-- [x] `sw.js`: handler `push` + `notificationclick` (abrir sala) — ya escritos, listos
-- [ ] manejar 404/410 → borrar suscripción caducada de `subs`
-- [ ] **probar iOS 16.4+**: instalar PWA antes de suscribir; validar formato del `subject` VAPID
-- **deploy:** mensajes offline funcionando end-to-end. *Aquí ya es un messenger de verdad.*
+- [x] generar par de claves VAPID (`tools/make-vapid.mjs`); pública+subject como vars, privada como secret
+- [x] `push.js` cliente: pedir permiso, suscribirse, registrar `{endpoint,p256dh,auth}` en cada sala (`{type:"sub"}`)
+- [x] `worker/src/push.js`: firmar JWT VAPID (ES256) + cifrar payload (aes128gcm RFC 8291) + POST — hecho a mano con Web Crypto, sin dependencias
+- [x] el DO dispara push a miembros sin WS activo al llegar un `msg` (con throttle anti-spam)
+- [x] `sw.js`: handler `push` + `notificationclick` (abre la sala)
+- [x] manejar 404/410 → borrar suscripción caducada de `subs`
+- [x] verificado el cripto con round-trip (cifrar→descifrar) + firma/verificación del JWT
+- [~] **probar iOS 16.4+ en dispositivo real**: instalar PWA antes de suscribir; validar `subject` VAPID — *pendiente (necesita un móvil de verdad)*
+- **deploy:** ✅ desplegado. Mensajes offline → notificación. *Ya es un messenger de verdad.*
 
 ## fase 3 — cifrado fuerte
 > objetivo: subir del AEAD simple a cifrado autenticado estándar (NIP-44).

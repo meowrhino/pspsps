@@ -20,6 +20,10 @@ Firebase, nada de SDKs propietarios). Fusiona el motor de salas de
 - **Offline real.** Si te escriben mientras estás desconectado, el mensaje espera en el
   Durable Object y te llega al reconectar (backfill por cursor). Lo que escribes sin red
   se encola y se envía solo al volver.
+- **Avisos aunque cierres la app.** Web Push con VAPID propio (sin Firebase): el Durable
+  Object firma el JWT y cifra la notificación (`aes128gcm`, RFC 8291) para cada miembro
+  desconectado, todo hecho a mano con Web Crypto. El push **no lleva el texto** del mensaje
+  (el servidor no puede leerlo) — solo el id de sala, para abrir la conversación al tocarlo.
 - **Sin plataforma.** Backend = un Cloudflare Worker + un Durable Object por sala
   (WebSocket Hibernation API → cero consumo en reposo). Push = Web Push + VAPID propio.
 - **Vanilla.** HTML + CSS + JS con ES modules nativos. Sin React, sin build step, sin
@@ -59,16 +63,19 @@ public/                ← front 100% estático (lo sirve el Worker vía [assets
     crypto.js          ← AES-GCM por sala (zero-knowledge)
     ws.js              ← WebSocket con reconexión/backoff + cola offline
     salas.js           ← crear / invitar / unirse (clave en el #)
+    push.js            ← suscripción Web Push (cliente)
     alerts.js          ← sonido + badge + notificación
     ui/{list,room,modal}.js
   sw.js                ← service worker (cache shell + handlers push)
   manifest.webmanifest
   icons/               ← gato pixel-art (placeholder, regenerable)
 worker/src/
-  index.js             ← Worker: router, upgrade WS → DO
-  room.js              ← RoomDO: WS hibernation + SQLite cifrado
+  index.js             ← Worker: router, upgrade WS → DO, /vapid-public
+  room.js              ← RoomDO: WS hibernation + SQLite cifrado + disparo de push
+  push.js              ← VAPID JWT + cifrado aes128gcm (RFC 8291), sin dependencias
 wrangler.toml          ← un solo deploy: assets + DO en pspsps.meowrhino.studio
 tools/make-icons.mjs   ← genera los iconos sin dependencias
+tools/make-vapid.mjs   ← genera el par de claves VAPID para Web Push
 ```
 
 ## desarrollo
@@ -77,6 +84,11 @@ tools/make-icons.mjs   ← genera los iconos sin dependencias
 npm run dev          # wrangler dev → http://localhost:8787 (front + /ws)
 npm run deploy       # despliega a Cloudflare (pspsps.meowrhino.studio)
 npm run icons        # regenera los iconos del gato
+
+# Web Push (una vez): genera las claves VAPID y guárdalas
+node tools/make-vapid.mjs                 # escribe /tmp/pspsps-vapid.json
+# pon la pública (+ subject) en wrangler.toml [vars], y la privada como secret:
+cat /tmp/pspsps-vapid.json | npx wrangler secret put VAPID_PRIVATE   # pega el campo "private"
 ```
 
 No hay build step en el front: son ES modules que el navegador carga tal cual.
