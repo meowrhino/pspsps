@@ -25,10 +25,14 @@
     <div class="card">
       <div class="brand brand-big">psp<span class="brand-cat">🐱</span>sps</div>
       <p class="tagline">mensajería para colectivos pequeños</p>
+      <div class="identity-cat-row">
+        <div id="identity-cat" class="cat-avatar-lg"></div>
+        <button id="identity-reroll" class="ghost" type="button" title="otro gato">🎲</button>
+      </div>
       <label class="field-label" for="identity-alias">¿quién eres? <small>(sin contraseña)</small></label>
       <input id="identity-alias" type="text" placeholder="tu alias" maxlength="25" autocomplete="off" />
       <div class="identity-row">
-        <input type="color" id="identity-color" class="swatch swatch-lg" title="tu color" />
+        <input type="color" id="identity-color" class="swatch swatch-lg" title="color de tu gato" />
         <button id="identity-go" type="button">entrar</button>
       </div>
       <p class="fineprint">tus mensajes se cifran en este dispositivo. el servidor solo mueve cápsulas que no puede leer.</p>
@@ -41,7 +45,7 @@
 
     <div id="dock">
       <button id="launcher" class="launch" type="button">
-        <span class="launch-cat">🐱</span> pspsps
+        <span class="launch-cat" id="launcher-avatar">🐱</span> pspsps
       </button>
       <div id="tasks" class="tasks"></div>
       <div class="dock-right">
@@ -53,8 +57,9 @@
   <!-- ── menú del lanzador (se abre desde el dock) ─────────────────────────── -->
   <div id="launcher-menu" class="launcher-menu hidden">
     <div class="lm-head">
+      <div id="lm-avatar" class="cat-avatar-sm"></div>
       <span class="lm-who">tú: <b id="lm-alias"></b></span>
-      <input type="color" id="my-color" class="swatch" title="tu color" />
+      <button id="edit-cat" class="ghost" type="button">editar gato</button>
     </div>
     <div class="lm-actions">
       <button id="new-sala" type="button">+ sala nueva</button>

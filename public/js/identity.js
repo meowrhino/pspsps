@@ -1,42 +1,67 @@
 // identity.js — shell de identidad ligera ("¿quién eres?"), heredado de toctoc
-// pero SIN servidor de cuentas: el alias y el color viven en IndexedDB en este
-// dispositivo. Fase 4 (roadmap): migrar a clave criptográfica portable.
-import { $, colorFor } from "./util.js";
+// pero SIN servidor de cuentas: el alias, el color y TU GATO viven en IndexedDB
+// en este dispositivo. El gato (cat.js) es tu avatar. Su color y el color del
+// usuario son el mismo (tu color = el de tu gato).
+import { $ } from "./util.js";
 import * as db from "./db.js";
+import { DEFAULT_CAT, catSvg, randomCatTraits } from "./cat.js";
 
-let _me = null; // { alias, color }
+let _me = null; // { alias, color, cat }
 
 export function me() {
   return _me;
 }
 
+function normalize(row) {
+  const cat = row.cat ? { ...DEFAULT_CAT, ...row.cat } : { ...DEFAULT_CAT, color: row.color || DEFAULT_CAT.color };
+  return { alias: row.alias, color: cat.color, cat };
+}
+
 export async function loadIdentity() {
   const row = await db.getIdentity();
-  _me = row ? { alias: row.alias, color: row.color } : null;
+  _me = row ? normalize(row) : null;
   return _me;
 }
 
 export async function updateColor(color) {
   if (!_me) return;
   _me.color = color;
-  await db.setIdentity(_me.alias, color);
+  _me.cat = { ..._me.cat, color };
+  await db.setIdentity(_me.alias, color, _me.cat);
 }
 
-// Monta la pantalla de identidad y resuelve cuando la persona entra.
+export async function updateCat(cat) {
+  if (!_me) return;
+  _me.cat = { ...DEFAULT_CAT, ...cat };
+  _me.color = _me.cat.color;
+  await db.setIdentity(_me.alias, _me.color, _me.cat);
+}
+
+// Monta la pantalla de identidad (alias + gato editable básico) y resuelve al entrar.
 export function mountIdentityScreen(onDone) {
   const alias = $("#identity-alias");
-  const color = $("#identity-color");
-  const go = $("#identity-go");
+  const preview = $("#identity-cat");
+  let cat = randomCatTraits();
 
-  // color inicial: uno bonito y determinista para que el picker no salga negro
-  color.value = colorFor(String(Math.floor(Math.random() * 1e6)));
+  const paint = () => {
+    if (preview) preview.innerHTML = catSvg(cat);
+  };
+  paint();
 
-  // el color por defecto sigue al alias mientras no lo toquen a mano
-  let colorTouched = false;
-  color.addEventListener("input", () => (colorTouched = true));
-  alias.addEventListener("input", () => {
-    if (!colorTouched && alias.value.trim()) color.value = colorFor(alias.value.trim());
+  // re-tirar los rasgos del gato (color incluido)
+  $("#identity-reroll")?.addEventListener("click", () => {
+    cat = randomCatTraits();
+    paint();
   });
+  // el color del picker tiñe el gato
+  const color = $("#identity-color");
+  if (color) {
+    color.value = cat.color;
+    color.addEventListener("input", () => {
+      cat = { ...cat, color: color.value };
+      paint();
+    });
+  }
 
   async function enter() {
     const name = alias.value.trim();
@@ -44,15 +69,14 @@ export function mountIdentityScreen(onDone) {
       alias.focus();
       return;
     }
-    await db.setIdentity(name, color.value);
-    _me = { alias: name, color: color.value };
+    await db.setIdentity(name, cat.color, cat);
+    _me = { alias: name, color: cat.color, cat };
     onDone(_me);
   }
 
-  go.addEventListener("click", enter);
+  $("#identity-go").addEventListener("click", enter);
   alias.addEventListener("keydown", (e) => {
     if (e.key === "Enter") enter();
   });
-
   setTimeout(() => alias.focus(), 50);
 }

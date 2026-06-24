@@ -71,9 +71,9 @@ export async function getIdentity() {
     (r) => r || null,
   );
 }
-export async function setIdentity(alias, color) {
+export async function setIdentity(alias, color, cat) {
   return tx("identidad", "readwrite", (t) =>
-    t.objectStore("identidad").put({ id: "me", alias, color }),
+    t.objectStore("identidad").put({ id: "me", alias, color, cat }),
   );
 }
 

@@ -12,8 +12,18 @@ import { openRoomWindow, setColorAll } from "./ui/room.js";
 import { joinSala, parseInvite, ensurePlaza } from "./salas.js";
 import * as alerts from "./alerts.js";
 import * as push from "./push.js";
+import { catSvg } from "./cat.js";
+import { openCatMaker } from "./ui/catmaker.js";
 
 let pendingInvite = null;
+
+function renderAvatars() {
+  const svg = catSvg(identity.me().cat);
+  const la = $("#launcher-avatar");
+  if (la) la.innerHTML = svg;
+  const ma = $("#lm-avatar");
+  if (ma) ma.innerHTML = svg;
+}
 
 async function enterDesktop() {
   $("#boot").classList.add("hidden");
@@ -22,12 +32,13 @@ async function enterDesktop() {
   alerts.setup({ emoji: "🐱", base: "pspsps" }); // cablea el 🔔 del dock
   launcher.initLauncher({ onOpenSala: openRoomWindow });
 
-  // color global del usuario (en el menú del lanzador) → propaga a salas abiertas
-  const picker = $("#my-color");
-  picker.value = identity.me().color;
-  picker.addEventListener("change", async () => {
-    await identity.updateColor(picker.value);
-    setColorAll(picker.value);
+  // tu gato es tu avatar: lo pintamos en el dock y el menú, y lo reeditas desde
+  // el menú. Al cambiarlo, repintamos y propagamos el color a las salas abiertas.
+  renderAvatars();
+  $("#edit-cat").addEventListener("click", openCatMaker);
+  document.addEventListener("identity-changed", () => {
+    renderAvatars();
+    setColorAll(identity.me().color);
   });
 
   // web push
