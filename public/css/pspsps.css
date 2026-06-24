@@ -137,6 +137,9 @@ button.ghost:hover { color: var(--text); background: var(--surface-2); }
 .cm-chip { background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim); border-radius: var(--radius); padding: .3rem .5rem; font-size: .72rem; cursor: pointer; }
 .cm-chip:hover { color: var(--text); }
 .cm-chip.active { background: var(--accent); color: #1a1206; border-color: var(--accent); }
+.cm-name-row { display: flex; gap: .4rem; }
+.cm-name-row input { flex: 1; }
+.cm-name-row button { flex-shrink: 0; }
 .cm-actions { display: flex; gap: .5rem; margin-top: 1rem; }
 .cm-actions button { flex: 1; }
 

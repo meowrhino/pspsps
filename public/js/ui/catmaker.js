@@ -3,7 +3,7 @@
 // partes vía el evento "identity-changed").
 import * as wm from "../wm.js";
 import { CAT_OPTIONS, CAT_SWATCHES, catSvg, randomCatTraits, DEFAULT_CAT } from "../cat.js";
-import { me, updateCat } from "../identity.js";
+import { me, updateCat, setAlias } from "../identity.js";
 
 const el = (tag, cls) => { const n = document.createElement(tag); if (cls) n.className = cls; return n; };
 
@@ -25,6 +25,27 @@ function buildEditor(body) {
     await updateCat(cat);
     document.dispatchEvent(new CustomEvent("identity-changed"));
   };
+
+  // ── nombre (puedes ponerte uno si entraste anónimo) ──
+  const nameLabel = el("div", "cm-label");
+  nameLabel.textContent = me().anon ? "tu nombre (eres anónimo)" : "tu nombre";
+  const nameRow = el("div", "cm-name-row");
+  const nameInput = el("input");
+  nameInput.type = "text";
+  nameInput.maxLength = 25;
+  nameInput.placeholder = me().anon ? "ponte un nombre…" : "tu nombre";
+  if (!me().anon) nameInput.value = me().alias;
+  const nameBtn = el("button");
+  nameBtn.type = "button";
+  nameBtn.textContent = "guardar";
+  nameBtn.addEventListener("click", async () => {
+    const v = nameInput.value.trim();
+    if (!v || v === me().alias) return;
+    await setAlias(v);
+    location.reload(); // aplica el nombre limpio en todas partes
+  });
+  nameRow.append(nameInput, nameBtn);
+  controls.append(nameLabel, nameRow);
 
   // ── color ──
   const colorLabel = el("div", "cm-label");
