@@ -122,6 +122,21 @@ Decisiones conscientes para fase 0, no olvidos. A revisar en fase 2/3:
 - **Hueco del ring buffer**: si pierdes >10 000 mensajes estando offline, se avisa por
   consola (el servidor manda `minSeq`); falta el aviso visual en la UI.
 
+### mejoras anotadas (revisión profunda, jun 2026)
+Ya aplicado: DRY de helpers, caché de `catSvg`, `putMessage` en 1 transacción, try/catch en
+el DO, throttle de `move`, `lastPush` tras envío, clave del DM anclada en la sala. Pendiente
+(menor, a ojo cuando apetezca):
+- **Índices SQL**: `subs(name)` y un índice `mensajes(sala, pendiente)` para `getPending`.
+- **Poda de `profiles`/`subs`** por `last_seen` (cuando crezca el colectivo).
+- **Apodo anónimo a 6 caracteres** (hoy 4 → ~1.6M; colisión despreciable en grupos pequeños
+  pero subir es trivial).
+- **Limpiar listeners** globales de `alerts`/`modal` si se quiere teardown perfecto.
+- **Domain separation** en el HKDF de `deriveDM` (hoy lo cubre el AAD por sala; sería
+  defensa en profundidad, pero cambia la clave → solo si no hay DMs reales aún).
+- **Anti-suplantación de alias en servidor**: NO se hizo a propósito (rompería multi-
+  dispositivo: misma persona, otro dispositivo = otra clave). La identidad por clave +
+  el gato/apodo ya hacen visible la suplantación.
+
 ---
 
 ### criterios de "hecho" por fase

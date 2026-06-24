@@ -109,10 +109,16 @@ No hay build step en el front: son ES modules que el navegador carga tal cual.
 ## seguridad / modelo de amenaza (fase 0)
 
 - El servidor **nunca** ve texto plano de los mensajes (AES-GCM en el cliente, AAD ata el
-  blob a su sala).
-- **Sí** ve metadatos: id de sala, alias y presencia (quién está conectado y cuándo).
-  Ocultarlos (NIP-17 gift-wrap) es trabajo de una fase futura.
-- **Cualquiera con el link de invitación** puede leer la sala: el link es una llave.
+  blob a su sala). Este es el invariante duro.
+- **Sí** ve metadatos (zero-knowledge de *contenido*, no anonimato total): id de sala,
+  alias, gato (avatar), clave pública ECDH y presencia (quién está conectado y cuándo).
+  Con eso podría reconstruir el grafo social. Ocultarlo (NIP-17 gift-wrap, alias efímeros)
+  es trabajo futuro.
+- **La identidad real es la clave pública, no el alias.** El alias es solo una etiqueta;
+  por eso cada persona se muestra con su gato y, si es anónima, con un apodo derivado de su
+  clave (`gato·xxxx`). Si alguien usa el alias de otro, tendrá **otra clave → otro gato/apodo**,
+  así que la suplantación se nota a la vista. Los DMs se cifran contra la clave, no el alias.
+- **Cualquiera con el link de invitación** puede leer esa sala: el link es una llave.
   Compártelo por un canal de confianza.
 - Sin forward secrecy todavía: si se filtra la clave de una sala, se descifra su
   histórico. Aceptable para un colectivo pequeño de confianza; el roadmap sube a NIP-44.
