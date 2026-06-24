@@ -1,0 +1,308 @@
+/* pspsps — mensajería para colectivos pequeños.
+   Hereda la línea meowrhino de rumrum/toctoc: negro cálido + dorado +
+   JetBrains Mono + textura de puntos. Mobile-first; una vista a pantalla
+   completa cada vez, centrada en una columna en pantallas anchas. */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #0d0c0a;
+  --surface: #16130f;
+  --surface-2: #1d1914;
+  --border: #2a2622;
+  --hairline: #221e1a;
+  --text: #d8d2c4;
+  --text-dim: #a89e8b;
+  --muted: #6b6357;
+  --accent: #e8b04a;
+  --accent-dim: #b58836;
+  --danger: #e87a7a;
+  --online: #4ade80;
+  --dots: #1a1612;
+  --mono: 'JetBrains Mono', 'Menlo', monospace;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.5;
+  background-color: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* textura de fondo (viñeta + puntitos) anclada al viewport */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 60% 55% at 50% 38%, var(--bg) 0%, var(--bg) 30%, transparent 80%),
+    radial-gradient(var(--dots) 1px, transparent 1px);
+  background-size: auto, 22px 22px;
+}
+
+.hidden { display: none !important; }
+
+/* la columna de la app: ocupa la pantalla, centrada y acotada en desktop */
+#shell {
+  width: min(560px, 100%);
+  height: 100%;
+  height: 100dvh;
+  margin: 0 auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+
+/* cada vista llena la columna; el router muestra una sola a la vez */
+.view {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  min-height: 0;
+}
+.view.active { display: flex; }
+
+/* ── tipografía de marca ──────────────────────────────────────────────────── */
+.brand { font-weight: 600; color: var(--accent); letter-spacing: .02em; }
+.brand-cat { filter: saturate(0.85); }
+.brand-big { font-size: 2rem; }
+.tagline { margin: .2rem 0 1.2rem; color: var(--muted); font-size: .8rem; }
+
+/* ── inputs y botones comunes ─────────────────────────────────────────────── */
+input, button, textarea { font: inherit; }
+input[type="text"], textarea {
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .55rem .65rem;
+  width: 100%;
+  font-size: 16px; /* >=16px evita el zoom automático de iOS al enfocar */
+}
+input::placeholder, textarea::placeholder { color: var(--muted); }
+input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+textarea { resize: vertical; min-height: 4.5rem; }
+
+button {
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--radius);
+  padding: .55rem 1rem;
+  cursor: pointer;
+}
+button:hover { background: var(--accent-dim); }
+button.ghost {
+  color: var(--text-dim);
+  background: none;
+  border: 1px solid var(--border);
+}
+button.ghost:hover { color: var(--text); background: var(--surface-2); }
+button.danger { background: none; color: var(--danger); border: 1px solid var(--danger); }
+button.danger:hover { background: rgba(232,122,122,.1); }
+
+/* selector de color */
+.swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  align-self: center;
+  flex-shrink: 0;
+}
+.swatch-lg { width: 44px; height: 44px; }
+.swatch::-webkit-color-swatch-wrapper { padding: 2px; }
+.swatch::-webkit-color-swatch { border: none; border-radius: 2px; }
+.swatch::-moz-color-swatch { border: none; border-radius: 2px; }
+
+.iconbtn {
+  background: none;
+  border: 0;
+  color: var(--text-dim);
+  padding: 0 .25rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.iconbtn:hover { color: var(--text); background: none; }
+
+/* ── barra superior ───────────────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  gap: .7rem;
+  align-items: center;
+  padding: .6rem .85rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(var(--surface), var(--bg));
+  flex-shrink: 0;
+}
+.topbar .brand { font-size: 1rem; }
+.topbar .meta { font-size: .72rem; color: var(--muted); margin-right: auto; }
+
+/* ── vista identidad ──────────────────────────────────────────────────────── */
+#view-identity { align-items: center; justify-content: center; padding: 1.2rem; }
+.card {
+  display: flex;
+  flex-direction: column;
+  width: min(340px, 92vw);
+  padding: 1.6rem 1.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, .5);
+  text-align: center;
+}
+.card .field-label { text-align: left; color: var(--text-dim); font-size: .8rem; margin-bottom: .35rem; }
+.card .field-label small { color: var(--muted); }
+.identity-row { display: flex; gap: .6rem; align-items: center; margin-top: .7rem; }
+.identity-row button { flex: 1; }
+.fineprint { margin: 1.1rem 0 0; color: var(--muted); font-size: .68rem; line-height: 1.45; text-align: left; }
+
+/* ── lista de salas ───────────────────────────────────────────────────────── */
+.list-actions { display: flex; gap: .5rem; padding: .7rem .85rem; border-bottom: 1px solid var(--hairline); }
+.list-actions button { flex: 1; padding: .5rem .6rem; font-size: .82rem; }
+
+#salas { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
+#salas li {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .8rem .9rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--hairline);
+  border-left: 3px solid transparent;
+}
+#salas li:hover { background: var(--surface-2); }
+.sala-avatar {
+  width: 34px; height: 34px; flex-shrink: 0;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: .95rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.sala-main { min-width: 0; flex: 1; }
+.sala-name { color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sala-last { color: var(--muted); font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sala-time { color: var(--muted); font-size: .66rem; flex-shrink: 0; }
+
+.empty { margin: auto; padding: 2rem; color: var(--muted); text-align: center; font-size: .85rem; line-height: 1.6; }
+
+/* ── sala: cabecera ───────────────────────────────────────────────────────── */
+.room-head { gap: .5rem; }
+.room-head .room-name { font-weight: 600; color: var(--text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#room-back { font-size: 1.5rem; padding: 0 .2rem; }
+.conn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background .3s; }
+.conn-dot.online { background: var(--online); box-shadow: 0 0 6px var(--online); }
+.conn-dot.connecting { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.conn-dot.offline { background: var(--muted); }
+
+/* presencia */
+.presence {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .35rem .9rem;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--bg);
+  font-size: .7rem; color: var(--muted);
+  overflow-x: auto; white-space: nowrap;
+  flex-shrink: 0;
+}
+.presence:empty { display: none; }
+.presence-chip { display: inline-flex; align-items: center; gap: .3rem; color: var(--text-dim); }
+.presence-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; box-shadow: 0 0 4px currentColor; }
+
+/* ── sala: mensajes (burbujas estilo Messenger, de toctoc) ───────────────── */
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 1rem .9rem;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+.bubble {
+  max-width: 78%;
+  padding: .45rem .7rem;
+  border-radius: 14px;
+  word-break: break-word;
+  position: relative;
+}
+.bubble .text { white-space: pre-wrap; }
+.bubble .text .link { color: inherit; text-decoration: underline; word-break: break-all; }
+.bubble .meta-line { display: block; margin-top: .2rem; font-size: .62rem; opacity: .65; }
+.bubble.mine { align-self: flex-end; border-bottom-right-radius: 4px; background: var(--accent); color: #1a1206; }
+.bubble.mine .meta-line { text-align: right; }
+.bubble.theirs { align-self: flex-start; border-bottom-left-radius: 4px; background: var(--surface-2); color: var(--text); }
+.bubble.theirs .author { font-weight: 600; display: block; font-size: .72rem; margin-bottom: .1rem; }
+.bubble.pending { opacity: .6; }
+.bubble.undecryptable { background: var(--hairline); color: var(--muted); font-style: italic; }
+
+/* separador de día */
+.daysep { display: flex; align-items: center; gap: .6rem; align-self: stretch; margin: .5rem 0; color: var(--muted); font-size: .68rem; }
+.daysep::before, .daysep::after { content: ''; flex: 1; height: 1px; background: var(--hairline); }
+
+/* composer */
+#composer {
+  display: flex;
+  gap: .5rem;
+  padding: .6rem .8rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+  padding-bottom: calc(.6rem + env(safe-area-inset-bottom));
+}
+#composer input { flex: 1; }
+#composer button { flex-shrink: 0; }
+
+/* ── modal ────────────────────────────────────────────────────────────────── */
+.modal {
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center;
+  background: rgba(0,0,0,.6);
+  padding: 1rem;
+}
+.modal-card {
+  position: relative;
+  width: min(420px, 94vw);
+  max-height: 86vh; overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.3rem;
+  box-shadow: 0 12px 50px rgba(0,0,0,.6);
+}
+.modal-card h2 { margin: 0 0 .8rem; color: var(--accent); font-size: 1rem; }
+.modal-close { position: absolute; top: .5rem; right: .6rem; background: none; color: var(--muted); font-size: 1.3rem; padding: 0 .3rem; }
+.modal-close:hover { color: var(--text); background: none; }
+.modal p { color: var(--text-dim); font-size: .82rem; line-height: 1.5; }
+.modal label { display: block; color: var(--text-dim); font-size: .78rem; margin: .8rem 0 .3rem; }
+.invite-link {
+  display: flex; gap: .4rem; margin-top: .3rem;
+}
+.invite-link input { font-size: .72rem; }
+.modal-row { display: flex; gap: .5rem; margin-top: 1rem; }
+.modal-row button { flex: 1; }
+.warn { color: var(--accent); font-size: .72rem; margin-top: .8rem; }
+.copied { color: var(--online); font-size: .72rem; margin-top: .4rem; }

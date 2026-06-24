@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>pspsps</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#0d0c0a" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="pspsps" />
+  <meta name="description" content="mensajería cifrada para colectivos pequeños. small web, sin plataforma." />
+
+  <link rel="stylesheet" href="/css/pspsps.css" />
+</head>
+<body>
+  <div id="shell">
+
+    <!-- ── identidad: ¿quién eres? ───────────────────────────────────────── -->
+    <section id="view-identity" class="view">
+      <div class="card">
+        <div class="brand brand-big">psp<span class="brand-cat">🐱</span>sps</div>
+        <p class="tagline">mensajería para colectivos pequeños</p>
+        <label class="field-label" for="identity-alias">¿quién eres? <small>(sin contraseña)</small></label>
+        <input id="identity-alias" type="text" placeholder="tu alias" maxlength="25" autocomplete="off" />
+        <div class="identity-row">
+          <input type="color" id="identity-color" class="swatch swatch-lg" title="tu color" />
+          <button id="identity-go" type="button">entrar</button>
+        </div>
+        <p class="fineprint">tus mensajes se cifran en este dispositivo. el servidor solo mueve cápsulas que no puede leer.</p>
+      </div>
+    </section>
+
+    <!-- ── lista de salas ────────────────────────────────────────────────── -->
+    <section id="view-list" class="view">
+      <header class="topbar">
+        <span class="brand">psp<span class="brand-cat">🐱</span>sps</span>
+        <span class="meta" id="list-whoami"></span>
+        <input type="color" id="my-color" class="swatch" title="tu color" />
+        <button id="mute" class="iconbtn" type="button">🔔</button>
+      </header>
+
+      <div class="list-actions">
+        <button id="new-sala" type="button">+ sala nueva</button>
+        <button id="join-sala" class="ghost" type="button">unirme con invitación</button>
+      </div>
+
+      <ul id="salas"></ul>
+      <p id="list-empty" class="empty hidden">
+        aún no hay salas.<br />crea una o pega una invitación.
+      </p>
+    </section>
+
+    <!-- ── sala abierta ──────────────────────────────────────────────────── -->
+    <section id="view-room" class="view">
+      <header class="topbar room-head">
+        <button id="room-back" class="iconbtn" type="button" title="volver">‹</button>
+        <span class="room-name" id="room-name"></span>
+        <span class="conn-dot" id="conn-dot" title="conexión"></span>
+        <button id="room-invite" class="iconbtn" type="button" title="invitar a la sala">🔗</button>
+        <button id="room-leave" class="iconbtn" type="button" title="salir de la sala">⋯</button>
+      </header>
+
+      <div id="presence" class="presence"></div>
+      <ul id="messages"></ul>
+
+      <form id="composer" autocomplete="off">
+        <input id="body" type="text" placeholder="pspsps…" maxlength="2000" autocomplete="off" />
+        <button type="submit">enviar</button>
+      </form>
+    </section>
+
+  </div>
+
+  <!-- ── modal reutilizable (invitar / unirse) ───────────────────────────── -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <button id="modal-close" class="modal-close" type="button" aria-label="cerrar">×</button>
+      <h2 id="modal-title"></h2>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
