@@ -27,10 +27,18 @@ export async function openDMWith(alias, theirPk) {
     alert(`${alias} todavía no tiene clave para chat cifrado (que coincida contigo en la plaza o el patio).`);
     return;
   }
-  const { id, keyB64 } = await deriveDM(my.keys.privJwk, my.keys.pubRaw, theirPk);
-  let sala = await db.getSala(id);
+  let dm;
+  try {
+    dm = await deriveDM(my.keys.privJwk, my.keys.pubRaw, theirPk);
+  } catch {
+    alert(`la clave de ${alias} no es válida — no se puede abrir el chat cifrado.`);
+    return;
+  }
+  let sala = await db.getSala(dm.id);
   if (!sala) {
-    sala = { id, nombre: alias, keyB64, dm: true, ultimoSeq: 0, ultimoTexto: "", ultimoTs: 0, creada: Date.now() };
+    // `theirPk` queda fijado en la sala: la clave del DM se deriva una sola vez,
+    // así que el chat queda anclado a esa identidad criptográfica.
+    sala = { id: dm.id, nombre: alias, keyB64: dm.keyB64, theirPk, dm: true, ultimoSeq: 0, ultimoTexto: "", ultimoTs: 0, creada: Date.now() };
     await db.putSala(sala);
     document.dispatchEvent(new CustomEvent("salas-changed"));
   }
