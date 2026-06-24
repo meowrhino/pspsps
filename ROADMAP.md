@@ -77,24 +77,32 @@ Marca `[x]` al completar y commitea la actualización de este archivo.
 - [ ] versionar el formato del blob para migrar (el AAD ya lleva versión "v1")
 - **deploy:** mismo UX, cifrado serio por debajo.
 
-## fase 4 — identidad soberana
-> objetivo: pasar de alias-sin-contraseña a clave criptográfica portable (Nostr-like).
+## fase 4 — identidad soberana (parcial, adelantada por el patio)
+> objetivo: pasar de alias-sin-contraseña a clave criptográfica portable.
 
-- [ ] generar par secp256k1 en el navegador (`@noble/curves`)
-- [ ] identidad = pubkey; alias = etiqueta local
+- [x] par de claves en el navegador: **ECDH P-256 (Web Crypto, sin dependencias)** en vez
+      de secp256k1 — suficiente para DMs E2E y cero deps. La privada vive en IndexedDB.
+- [x] identidad lleva pubkey; los **DMs del patio** se derivan por ECDH (`deriveDM`) → sala
+      1:1 cifrada sin intercambiar secretos
 - [ ] backup cifrado de la privkey (patrón trackr) para mover entre dispositivos
 - [ ] frase mnemónica (BIP-39) o export/import de clave cifrada
-- **deploy:** usuarios soberanos, sin servidor de cuentas.
+- **deploy:** ✅ identidad por clave activa para los DMs.
 
 ## fase 5 — pulido + opcionales
 - [x] **pseudo-escritorio de ventanas** (window manager): salas como ventanas flotantes
       arrastrables, minimizables al dock; responsive (maximizan en móvil)
 - [x] **plaza pública** anclada (id+clave conocidos): sala común siempre abierta
+- [x] **editor de gato** (cat.js + ui/catmaker.js): tu avatar pixel-art, editable; viaja por
+      WS y se ve en las burbujas y el patio
+- [x] **tema "XP cálido"** conmutable (calidez Windows XP en paleta meowrhino)
+- [x] **el patio** (ui/patio.js): espacio caminable, gatos en tiempo real, clic en un gato →
+      DM cifrado por ECDH
 - [ ] presencia "escribiendo…" — extender el protocolo `presence`
-- [x] mascota gato pixel-art (placeholder generado en `tools/make-icons.mjs` — sustituir por el tuyo)
+- [x] mascota gato pixel-art (ahora editable por el usuario; placeholder de iconos en `tools/`)
 - [ ] transferencia de ficheros (¿P2P WebRTC entre dos pares online?)
 - [ ] sonidos (el "pspsps" real como notificación)
 - [ ] recordar posición/tamaño de las ventanas entre sesiones
+- [ ] suelo/escenografía del patio más rica (objetos, zonas)
 
 ---
 

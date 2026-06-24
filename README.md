@@ -31,7 +31,13 @@ Firebase, nada de SDKs propietarios). Fusiona el motor de salas de
 - **Pseudo-escritorio.** No es una pantalla apilada de arriba abajo: es un pequeño
   escritorio donde cada sala es una **ventana** flotante (estilo rumrum) que arrastras,
   minimizas al dock o cierras. La **plaza pública** va anclada: siempre abierta para todo
-  el colectivo. En móvil las ventanas se maximizan y el dock cambia entre ellas.
+  el colectivo. En móvil las ventanas se maximizan y el dock cambia entre ellas. Tema
+  **"XP cálido"** conmutable (la calidez de Windows XP en la paleta meowrhino).
+- **Tu gato es tu identidad.** Un editor de gato pixel-art (motor heredado de `miaumiau`):
+  eliges color, ojos, boca, sombrero… Tu gato viaja por el WebSocket y aparece en tus
+  burbujas y en **el patio**: un espacio caminable donde ves a quien está conectado en
+  tiempo real y, al clicar a alguien, se abre su chat 1:1 — una sala **cifrada de extremo
+  a extremo**, con la clave derivada por ECDH entre vuestras claves públicas (nunca viaja).
 
 ## arquitectura
 
