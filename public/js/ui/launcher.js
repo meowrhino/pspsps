@@ -6,6 +6,9 @@ import * as db from "../db.js";
 import { createSala, joinSala, parseInvite, buildInviteLink, PLAZA } from "../salas.js";
 import { me } from "../identity.js";
 import { openModal, closeModal } from "./modal.js";
+import * as contactos from "../contactos.js";
+import { openDMWith } from "./room.js";
+import { catSvg, decodeCat, DEFAULT_CAT } from "../cat.js";
 
 let nav = { onOpenSala: () => {} };
 
@@ -28,8 +31,9 @@ export function initLauncher(opts) {
   $("#new-sala").addEventListener("click", newSala);
   $("#join-sala").addEventListener("click", joinFromLink);
 
-  // refresca la lista cuando algo cambia (crear/unir/salir)
+  // refresca cuando algo cambia (crear/unir/salir; nuevo contacto)
   document.addEventListener("salas-changed", render);
+  document.addEventListener("contactos-changed", renderContactos);
 }
 
 export async function render() {
@@ -65,6 +69,38 @@ export async function render() {
     li.addEventListener("click", () => {
       $("#launcher-menu").classList.add("hidden");
       nav.onOpenSala(s);
+    });
+    ul.appendChild(li);
+  }
+  renderContactos();
+}
+
+// Agenda: gente con la que has coincidido. Tocar → abre su DM (derivado por ECDH).
+export async function renderContactos() {
+  const ul = $("#contactos");
+  if (!ul) return;
+  const cs = await contactos.list();
+  const empty = $("#contactos-empty");
+  if (empty) empty.classList.toggle("hidden", cs.length > 0);
+  ul.innerHTML = "";
+  for (const c of cs) {
+    const li = document.createElement("li");
+    const avatar = document.createElement("div");
+    avatar.className = "sala-avatar";
+    avatar.innerHTML = catSvg(decodeCat(c.cat) || DEFAULT_CAT);
+    const main = document.createElement("div");
+    main.className = "sala-main";
+    const name = document.createElement("div");
+    name.className = "sala-name";
+    name.textContent = c.alias;
+    const last = document.createElement("div");
+    last.className = "sala-last";
+    last.textContent = "chat privado cifrado";
+    main.append(name, last);
+    li.append(avatar, main);
+    li.addEventListener("click", () => {
+      $("#launcher-menu").classList.add("hidden");
+      openDMWith(c.alias, c.pk);
     });
     ul.appendChild(li);
   }

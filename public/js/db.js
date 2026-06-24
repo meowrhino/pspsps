@@ -11,7 +11,7 @@
 //   pushSub    { id:"me", endpoint, p256dh, auth }   (fase 2)
 
 const DB_NAME = "pspsps";
-const DB_VERSION = 1;
+const DB_VERSION = 2; // v2: añade el store `contactos` (aditivo, no toca lo demás)
 
 let _db = null;
 
@@ -33,6 +33,11 @@ export function init() {
       }
       if (!db.objectStoreNames.contains("pushSub")) {
         db.createObjectStore("pushSub", { keyPath: "id" });
+      }
+      // agenda local: gente con la que coincides (alias + gato + clave pública).
+      // La clave es la `pk` (identidad criptográfica); el alias es solo etiqueta.
+      if (!db.objectStoreNames.contains("contactos")) {
+        db.createObjectStore("contactos", { keyPath: "pk" });
       }
     };
     req.onsuccess = () => {
@@ -135,6 +140,18 @@ export async function getPending(sala) {
 export async function getAllPending() {
   const all = await tx("mensajes", "readonly", (t) => done(t.objectStore("mensajes").getAll()));
   return all.filter((m) => m.pendiente);
+}
+
+// ── contactos (agenda local) ────────────────────────────────────────────────
+export async function listContactos() {
+  const all = await tx("contactos", "readonly", (t) => done(t.objectStore("contactos").getAll()));
+  return all.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+}
+export async function getContacto(pk) {
+  return tx("contactos", "readonly", (t) => done(t.objectStore("contactos").get(pk))).then((r) => r || null);
+}
+export async function putContacto(c) {
+  return tx("contactos", "readwrite", (t) => t.objectStore("contactos").put(c));
 }
 
 // ── push (fase 2) ───────────────────────────────────────────────────────────

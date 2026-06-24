@@ -5,7 +5,7 @@
 // blobs.
 import { hhmm, dayKey, dayLabel, linkifyInto, colorFor, uuid } from "../util.js";
 import * as db from "../db.js";
-import { importKey, encrypt, decrypt } from "../crypto.js";
+import { importKey, encrypt, decrypt, deriveDM } from "../crypto.js";
 import { connectRoom } from "../ws.js";
 import * as alerts from "../alerts.js";
 import { me } from "../identity.js";
@@ -13,9 +13,29 @@ import { openModal } from "./modal.js";
 import { buildInviteLink } from "../salas.js";
 import { currentSub } from "../push.js";
 import { catSvg, encodeCat, decodeCat } from "../cat.js";
+import * as contactos from "../contactos.js";
 import * as wm from "../wm.js";
 
 const openRooms = new Map(); // sala.id → controlador
+
+// Abre (derivando si hace falta) el DM 1:1 con alguien, dada su clave pública.
+// La sala y la clave se derivan por ECDH (deriveDM): el servidor solo ve blobs.
+// Lo usan el patio (clic en un gato) y la agenda de contactos.
+export async function openDMWith(alias, theirPk) {
+  const my = me();
+  if (!theirPk || !my?.keys) {
+    alert(`${alias} todavía no tiene clave para chat cifrado (que coincida contigo en la plaza o el patio).`);
+    return;
+  }
+  const { id, keyB64 } = await deriveDM(my.keys.privJwk, my.keys.pubRaw, theirPk);
+  let sala = await db.getSala(id);
+  if (!sala) {
+    sala = { id, nombre: alias, keyB64, dm: true, ultimoSeq: 0, ultimoTexto: "", ultimoTs: 0, creada: Date.now() };
+    await db.putSala(sala);
+    document.dispatchEvent(new CustomEvent("salas-changed"));
+  }
+  openRoomWindow(sala);
+}
 
 // Reenvía el perfil actual (color + gato) a todas las salas abiertas. Lo llama
 // app.js cuando cambias tu gato/color, para que el resto te repinte.
@@ -131,7 +151,10 @@ function createRoom(sala, body) {
       onProfile: ({ name, color, cat, pk }) => {
         if (color) state.colors[name] = color;
         if (cat) state.cats[name] = decodeCat(cat);
-        if (pk) state.pubs[name] = pk;
+        if (pk) {
+          state.pubs[name] = pk;
+          contactos.note(name, cat, pk);
+        }
         repaintAuthor(name);
         paintPresence();
       },
@@ -293,7 +316,10 @@ function createRoom(sala, body) {
       if (!p) continue;
       if (p.color) state.colors[name] = p.color;
       if (p.cat) state.cats[name] = decodeCat(p.cat);
-      if (p.pk) state.pubs[name] = p.pk;
+      if (p.pk) {
+        state.pubs[name] = p.pk;
+        contactos.note(name, p.cat, p.pk); // a la agenda local
+      }
     }
   }
 

@@ -9,9 +9,8 @@ import * as wm from "../wm.js";
 import { connectRoom } from "../ws.js";
 import { catSvg, encodeCat, decodeCat } from "../cat.js";
 import { me } from "../identity.js";
-import { deriveDM } from "../crypto.js";
-import * as db from "../db.js";
-import { openRoomWindow } from "./room.js";
+import * as contactos from "../contactos.js";
+import { openDMWith } from "./room.js";
 
 const PATIO_ROOM = "patio-publico-pspsps";
 let ctrl = null;
@@ -105,25 +104,15 @@ function buildPatio(body) {
     for (const [name, p] of Object.entries(profiles || {})) {
       if (!p) continue;
       if (p.cat) state.cats[name] = decodeCat(p.cat);
-      if (p.pk) state.pubs[name] = p.pk;
+      if (p.pk) {
+        state.pubs[name] = p.pk;
+        contactos.note(name, p.cat, p.pk);
+      }
     }
   }
 
-  async function openDM(name) {
-    const theirPk = state.pubs[name];
-    const my = me();
-    if (!theirPk || !my.keys) {
-      alert(`${name} todavía no tiene clave para chat cifrado (que entre y salga del patio).`);
-      return;
-    }
-    const { id, keyB64 } = await deriveDM(my.keys.privJwk, my.keys.pubRaw, theirPk);
-    let sala = await db.getSala(id);
-    if (!sala) {
-      sala = { id, nombre: name, keyB64, dm: true, ultimoSeq: 0, ultimoTexto: "", ultimoTs: 0, creada: Date.now() };
-      await db.putSala(sala);
-      document.dispatchEvent(new CustomEvent("salas-changed"));
-    }
-    openRoomWindow(sala);
+  function openDM(name) {
+    openDMWith(name, state.pubs[name]);
   }
 
   const m = me();
@@ -142,7 +131,10 @@ function buildPatio(body) {
     },
     onProfile: ({ name, cat, pk }) => {
       if (cat) state.cats[name] = decodeCat(cat);
-      if (pk) state.pubs[name] = pk;
+      if (pk) {
+        state.pubs[name] = pk;
+        contactos.note(name, cat, pk);
+      }
       if (state.els.has(name)) ensureCat(name);
     },
     onPresence: (online) => {
