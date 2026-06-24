@@ -19,73 +19,59 @@
   <link rel="stylesheet" href="/css/pspsps.css" />
 </head>
 <body>
-  <div id="shell">
 
-    <!-- ── identidad: ¿quién eres? ───────────────────────────────────────── -->
-    <section id="view-identity" class="view">
-      <div class="card">
-        <div class="brand brand-big">psp<span class="brand-cat">🐱</span>sps</div>
-        <p class="tagline">mensajería para colectivos pequeños</p>
-        <label class="field-label" for="identity-alias">¿quién eres? <small>(sin contraseña)</small></label>
-        <input id="identity-alias" type="text" placeholder="tu alias" maxlength="25" autocomplete="off" />
-        <div class="identity-row">
-          <input type="color" id="identity-color" class="swatch swatch-lg" title="tu color" />
-          <button id="identity-go" type="button">entrar</button>
-        </div>
-        <p class="fineprint">tus mensajes se cifran en este dispositivo. el servidor solo mueve cápsulas que no puede leer.</p>
+  <!-- ── identidad: ¿quién eres? (puerta de entrada) ───────────────────────── -->
+  <section id="boot" class="boot">
+    <div class="card">
+      <div class="brand brand-big">psp<span class="brand-cat">🐱</span>sps</div>
+      <p class="tagline">mensajería para colectivos pequeños</p>
+      <label class="field-label" for="identity-alias">¿quién eres? <small>(sin contraseña)</small></label>
+      <input id="identity-alias" type="text" placeholder="tu alias" maxlength="25" autocomplete="off" />
+      <div class="identity-row">
+        <input type="color" id="identity-color" class="swatch swatch-lg" title="tu color" />
+        <button id="identity-go" type="button">entrar</button>
       </div>
-    </section>
+      <p class="fineprint">tus mensajes se cifran en este dispositivo. el servidor solo mueve cápsulas que no puede leer.</p>
+    </div>
+  </section>
 
-    <!-- ── lista de salas ────────────────────────────────────────────────── -->
-    <section id="view-list" class="view">
-      <header class="topbar">
-        <span class="brand">psp<span class="brand-cat">🐱</span>sps</span>
-        <span class="meta" id="list-whoami"></span>
-        <input type="color" id="my-color" class="swatch" title="tu color" />
+  <!-- ── pseudo-escritorio: las ventanas viven aquí ────────────────────────── -->
+  <div id="desktop" class="hidden">
+    <!-- las ventanas (salas) se inyectan aquí -->
+
+    <div id="dock">
+      <button id="launcher" class="launch" type="button">
+        <span class="launch-cat">🐱</span> pspsps
+      </button>
+      <div id="tasks" class="tasks"></div>
+      <div class="dock-right">
         <button id="mute" class="iconbtn" type="button">🔔</button>
-      </header>
-
-      <div class="list-actions">
-        <button id="new-sala" type="button">+ sala nueva</button>
-        <button id="join-sala" class="ghost" type="button">unirme con invitación</button>
       </div>
-
-      <div id="push-banner" class="push-banner hidden">
-        <span class="push-text">🔔 recibe avisos aunque cierres la app</span>
-        <div class="push-actions">
-          <button id="push-enable" type="button">activar</button>
-          <button id="push-dismiss" class="ghost" type="button">ahora no</button>
-        </div>
-      </div>
-
-      <ul id="salas"></ul>
-      <p id="list-empty" class="empty hidden">
-        aún no hay salas.<br />crea una o pega una invitación.
-      </p>
-    </section>
-
-    <!-- ── sala abierta ──────────────────────────────────────────────────── -->
-    <section id="view-room" class="view">
-      <header class="topbar room-head">
-        <button id="room-back" class="iconbtn" type="button" title="volver">‹</button>
-        <span class="room-name" id="room-name"></span>
-        <span class="conn-dot" id="conn-dot" title="conexión"></span>
-        <button id="room-invite" class="iconbtn" type="button" title="invitar a la sala">🔗</button>
-        <button id="room-leave" class="iconbtn" type="button" title="salir de la sala">⋯</button>
-      </header>
-
-      <div id="presence" class="presence"></div>
-      <ul id="messages"></ul>
-
-      <form id="composer" autocomplete="off">
-        <input id="body" type="text" placeholder="pspsps…" maxlength="2000" autocomplete="off" />
-        <button type="submit">enviar</button>
-      </form>
-    </section>
-
+    </div>
   </div>
 
-  <!-- ── modal reutilizable (invitar / unirse) ───────────────────────────── -->
+  <!-- ── menú del lanzador (se abre desde el dock) ─────────────────────────── -->
+  <div id="launcher-menu" class="launcher-menu hidden">
+    <div class="lm-head">
+      <span class="lm-who">tú: <b id="lm-alias"></b></span>
+      <input type="color" id="my-color" class="swatch" title="tu color" />
+    </div>
+    <div class="lm-actions">
+      <button id="new-sala" type="button">+ sala nueva</button>
+      <button id="join-sala" class="ghost" type="button">unirme</button>
+    </div>
+    <div class="lm-section">tus salas</div>
+    <ul id="salas"></ul>
+    <div id="push-banner" class="push-banner hidden">
+      <span class="push-text">🔔 recibe avisos aunque cierres la app</span>
+      <div class="push-actions">
+        <button id="push-enable" type="button">activar</button>
+        <button id="push-dismiss" class="ghost" type="button">ahora no</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── modal reutilizable (invitar / unirse) ─────────────────────────────── -->
   <div id="modal" class="modal hidden">
     <div class="modal-card">
       <button id="modal-close" class="modal-close" type="button" aria-label="cerrar">×</button>

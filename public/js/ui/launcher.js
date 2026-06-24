@@ -1,33 +1,51 @@
-// list.js — la lista de salas (heredada del sidebar de toctoc, pero a pantalla
-// completa, mobile-first). Crear sala nueva, unirse con una invitación, y abrir
-// una sala al tocarla.
+// launcher.js — el menú del dock (el botón 🐱). Tus salas (toca para abrir su
+// ventana), crear una nueva, unirte con invitación, y tu alias + color. Sustituye
+// a la antigua "vista de lista" a pantalla completa.
 import { $, hhmm } from "../util.js";
 import * as db from "../db.js";
-import { createSala, joinSala, parseInvite, buildInviteLink } from "../salas.js";
+import { createSala, joinSala, parseInvite, buildInviteLink, PLAZA } from "../salas.js";
 import { me } from "../identity.js";
 import { openModal, closeModal } from "./modal.js";
 
-let nav = { onOpen: () => {} };
+let nav = { onOpenSala: () => {} };
 
-export function initListView(opts) {
+export function initLauncher(opts) {
   nav = opts;
+  const btn = $("#launcher");
+  const menu = $("#launcher-menu");
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    menu.classList.toggle("hidden");
+    if (!menu.classList.contains("hidden")) render();
+  });
+  // cerrar al hacer click fuera
+  document.addEventListener("click", (e) => {
+    if (!menu.classList.contains("hidden") && !menu.contains(e.target) && e.target !== btn) {
+      menu.classList.add("hidden");
+    }
+  });
+
   $("#new-sala").addEventListener("click", newSala);
   $("#join-sala").addEventListener("click", joinFromLink);
+
+  // refresca la lista cuando algo cambia (crear/unir/salir)
+  document.addEventListener("salas-changed", render);
 }
 
 export async function render() {
+  $("#lm-alias").textContent = me() ? me().alias : "";
   const ul = $("#salas");
-  const salas = await db.listSalas();
-  $("#list-whoami").textContent = me() ? `tú: ${me().alias}` : "";
-  $("#list-empty").classList.toggle("hidden", salas.length > 0);
+  let salas = await db.listSalas();
+  // la plaza siempre primero
+  salas = salas.sort((a, b) => (b.id === PLAZA.id ? 1 : 0) - (a.id === PLAZA.id ? 1 : 0));
   ul.innerHTML = "";
   for (const s of salas) {
     const li = document.createElement("li");
-    li.style.borderLeftColor = "var(--accent)";
+    if (s.id === PLAZA.id) li.classList.add("plaza");
 
     const avatar = document.createElement("div");
     avatar.className = "sala-avatar";
-    avatar.textContent = emojiFor(s.nombre);
+    avatar.textContent = s.id === PLAZA.id ? "🌐" : emojiFor(s.nombre);
 
     const main = document.createElement("div");
     main.className = "sala-main";
@@ -36,7 +54,7 @@ export async function render() {
     name.textContent = s.nombre;
     const last = document.createElement("div");
     last.className = "sala-last";
-    last.textContent = s.ultimoTexto || "sala vacía — di hola";
+    last.textContent = s.ultimoTexto || (s.id === PLAZA.id ? "la plaza del colectivo" : "sala vacía — di hola");
     main.append(name, last);
 
     const time = document.createElement("div");
@@ -44,7 +62,10 @@ export async function render() {
     time.textContent = s.ultimoTs ? hhmm(s.ultimoTs) : "";
 
     li.append(avatar, main, time);
-    li.addEventListener("click", () => nav.onOpen(s));
+    li.addEventListener("click", () => {
+      $("#launcher-menu").classList.add("hidden");
+      nav.onOpenSala(s);
+    });
     ul.appendChild(li);
   }
 }
@@ -56,8 +77,8 @@ function emojiFor(nombre) {
   return cats[h];
 }
 
-// ── crear sala ──────────────────────────────────────────────────────────────
 function newSala() {
+  $("#launcher-menu").classList.add("hidden");
   openModal("sala nueva", (body) => {
     const label = document.createElement("label");
     label.textContent = "nombre de la sala";
@@ -70,24 +91,21 @@ function newSala() {
     const create = document.createElement("button");
     create.textContent = "crear";
     row.appendChild(create);
-
     async function go() {
       const nombre = input.value.trim() || "sala";
       const sala = await createSala(nombre);
-      await render();
-      showInvite(body, sala); // misma modal → muestra el link + "entrar"
+      document.dispatchEvent(new CustomEvent("salas-changed"));
+      showInvite(body, sala);
     }
     create.addEventListener("click", go);
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") go();
     });
-
     body.append(label, input, row);
     setTimeout(() => input.focus(), 50);
   });
 }
 
-// reemplaza el cuerpo de la modal por el link de invitación de la sala recién creada
 function showInvite(body, sala) {
   body.innerHTML = "";
   $("#modal-title").textContent = "¡sala creada!";
@@ -115,23 +133,21 @@ function showInvite(body, sala) {
     ok.classList.remove("hidden");
   });
   row.append(input, copy);
-
   const enterRow = document.createElement("div");
   enterRow.className = "modal-row";
   const enter = document.createElement("button");
-  enter.textContent = "entrar a la sala";
+  enter.textContent = "abrir la sala";
   enter.addEventListener("click", () => {
     closeModal();
-    nav.onOpen(sala);
+    nav.onOpenSala(sala);
   });
   enterRow.appendChild(enter);
-
   body.append(p, row, ok, enterRow);
   setTimeout(() => input.select(), 50);
 }
 
-// ── unirse con invitación ─────────────────────────────────────────────────
 function joinFromLink() {
+  $("#launcher-menu").classList.add("hidden");
   openModal("unirme con invitación", (body) => {
     const label = document.createElement("label");
     label.textContent = "pega aquí el link de invitación";
@@ -145,7 +161,6 @@ function joinFromLink() {
     err.className = "warn hidden";
     err.textContent = "ese link no parece válido.";
     row.appendChild(btn);
-
     async function go() {
       const inv = parseInvite(ta.value.trim());
       if (!inv) {
@@ -154,11 +169,10 @@ function joinFromLink() {
       }
       const sala = await joinSala(inv);
       closeModal();
-      await render();
-      nav.onOpen(sala);
+      document.dispatchEvent(new CustomEvent("salas-changed"));
+      nav.onOpenSala(sala);
     }
     btn.addEventListener("click", go);
-
     body.append(label, ta, err, row);
     setTimeout(() => ta.focus(), 50);
   });

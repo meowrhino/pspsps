@@ -12,6 +12,27 @@ function randomId() {
   return b64u(crypto.getRandomValues(new Uint8Array(16)));
 }
 
+// La PLAZA pública: una sala con id y clave CONOCIDOS (van en el código). Todos
+// los que tienen la app la comparten → es pública. El servidor sigue moviendo
+// solo blobs opacos (el cifrado es uniforme, aunque la clave sea pública). Va
+// anclada en el escritorio: siempre abierta, no se puede cerrar ni borrar.
+export const PLAZA = {
+  id: "plaza-publica-pspsps",
+  nombre: "plaza pública",
+  keyB64: "xUUiQTkuSYvw7uJqajRh-b-UMqoSnCoxqg-BvgygAJw",
+  publica: true,
+  pinned: true,
+};
+
+// Asegura que la plaza esté en IndexedDB (sin pisar su cursor si ya existe).
+export async function ensurePlaza() {
+  const existing = await db.getSala(PLAZA.id);
+  if (!existing) {
+    await db.putSala({ ...PLAZA, ultimoSeq: 0, ultimoTexto: "", ultimoTs: 0, creada: Date.now() });
+  }
+  return db.getSala(PLAZA.id);
+}
+
 // Crea una sala nueva, genera su clave y la persiste localmente.
 export async function createSala(nombre) {
   const key = await genKey();
