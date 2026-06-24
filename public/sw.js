@@ -6,7 +6,7 @@
 //
 // Estrategia del shell: stale-while-revalidate (sirve cache al momento y
 // actualiza en segundo plano). Sube la versión del CACHE al cambiar el shell.
-const CACHE = "pspsps-v1";
+const CACHE = "pspsps-v2";
 const SHELL = [
   "/",
   "/css/pspsps.css",
@@ -18,6 +18,7 @@ const SHELL = [
   "/js/salas.js",
   "/js/identity.js",
   "/js/alerts.js",
+  "/js/push.js",
   "/js/ui/modal.js",
   "/js/ui/list.js",
   "/js/ui/room.js",

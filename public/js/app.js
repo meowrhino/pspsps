@@ -12,6 +12,7 @@ import * as list from "./ui/list.js";
 import * as room from "./ui/room.js";
 import { joinSala, parseInvite } from "./salas.js";
 import * as alerts from "./alerts.js";
+import * as push from "./push.js";
 
 let pendingInvite = null; // invitación recibida antes de tener identidad
 let currentRoomId = null;
@@ -77,6 +78,12 @@ async function boot() {
   await db.init();
   alerts.setup({ emoji: "🐱", base: "pspsps" });
 
+  // service worker primero: la PWA instalable, la carga offline del shell y el
+  // Web Push lo necesitan activo.
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }
+
   // cablea las vistas una sola vez
   list.initListView({ onOpen: (sala) => go("#/sala/" + enc(sala.id)) });
   room.initRoomView({
@@ -91,10 +98,19 @@ async function boot() {
   });
 
   await identity.loadIdentity();
+  await push.loadSub();
+
+  // al entrar a la app: refresca la suscripción de push (si ya hay permiso) y
+  // ofrece activarla (si aún no). No bloquea la navegación.
+  function enteredApp() {
+    picker.value = identity.me().color;
+    push.ensurePush().catch(() => {});
+    push.mountPushBanner();
+  }
 
   if (!identity.me()) {
     identity.mountIdentityScreen(async () => {
-      picker.value = identity.me().color;
+      enteredApp();
       // ¿llegó por una invitación? únete y entra; si no, a la lista
       if (pendingInvite) {
         const sala = await joinSala(pendingInvite);
@@ -106,16 +122,11 @@ async function boot() {
     });
     showView("identity");
   } else {
-    picker.value = identity.me().color;
+    enteredApp();
   }
 
   addEventListener("hashchange", route);
   await route();
-
-  // service worker: PWA instalable + carga offline del shell (+ push en fase 2)
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
-  }
 }
 
 boot();

@@ -182,6 +182,21 @@ button.danger:hover { background: rgba(232,122,122,.1); }
 .list-actions { display: flex; gap: .5rem; padding: .7rem .85rem; border-bottom: 1px solid var(--hairline); }
 .list-actions button { flex: 1; padding: .5rem .6rem; font-size: .82rem; }
 
+/* banner de "activar avisos" (Web Push) */
+.push-banner {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .6rem .85rem;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--surface-2);
+  font-size: .78rem;
+  color: var(--text-dim);
+}
+.push-text { flex: 1; min-width: 0; }
+.push-actions { display: flex; gap: .4rem; flex-shrink: 0; }
+.push-actions button { padding: .35rem .6rem; font-size: .76rem; }
+
 #salas { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
 #salas li {
   display: flex;

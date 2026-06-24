@@ -10,6 +10,7 @@ import * as alerts from "../alerts.js";
 import { me } from "../identity.js";
 import { openModal } from "./modal.js";
 import { buildInviteLink } from "../salas.js";
+import { currentSub } from "../push.js";
 
 let cur = null; // { sala, key, conn, colors, online }
 let msgs = []; // mensajes en memoria, ordenados por ts
@@ -102,6 +103,11 @@ export async function open(sala) {
       paintPresence();
     },
   });
+
+  // registra nuestra suscripción de push en esta sala (si la hay), para que su DO
+  // pueda avisarnos cuando estemos desconectados de ella
+  const sub = currentSub();
+  if (sub) cur.conn.sub(sub);
 
   // 3) reenvía la cola de salida (mensajes compuestos offline)
   const pend = await db.getPending(sala.id);
