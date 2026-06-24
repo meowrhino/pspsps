@@ -170,8 +170,17 @@ function gridToSvg(g, p) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges" style="image-rendering:pixelated;display:block">${body}</svg>`;
 }
 
-// Devuelve el SVG (string) del gato con esos rasgos.
+// Devuelve el SVG (string) del gato con esos rasgos. Memoizado: la función es
+// pura (mismos rasgos → mismo SVG), así que cacheamos por rasgos codificados.
+// Evita regenerar el grid 32×32 en cada burbuja / gato del patio / contacto.
+const _svgCache = new Map();
 export function catSvg(traits) {
   const t = { ...DEFAULT_CAT, ...(traits || {}) };
-  return gridToSvg(buildGrid(t), pal(t.color));
+  const key = encodeCat(t);
+  let svg = _svgCache.get(key);
+  if (!svg) {
+    svg = gridToSvg(buildGrid(t), pal(t.color));
+    _svgCache.set(key, svg);
+  }
+  return svg;
 }
