@@ -3,13 +3,13 @@
 // coexistir varias (la plaza + privadas) y todas reciben en vivo aunque estén
 // minimizadas. El cifrado es transparente: entra/sale texto, por el cable van
 // blobs.
-import { hhmm, dayKey, dayLabel, linkifyInto, colorFor, uuid } from "../util.js";
+import { hhmm, dayKey, dayLabel, linkifyInto, colorFor, uuid, el } from "../util.js";
 import * as db from "../db.js";
 import { importKey, encrypt, decrypt, deriveDM } from "../crypto.js";
 import { connectRoom } from "../ws.js";
 import * as alerts from "../alerts.js";
 import { me } from "../identity.js";
-import { openModal } from "./modal.js";
+import { openModal, inviteLinkField } from "./modal.js";
 import { buildInviteLink } from "../salas.js";
 import { currentSub } from "../push.js";
 import { catSvg, encodeCat, decodeCat } from "../cat.js";
@@ -62,12 +62,6 @@ export function openRoomWindow(sala) {
     },
   });
 }
-
-const el = (tag, cls) => {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  return n;
-};
 
 // ── un controlador de sala, atado a su `body` de ventana ────────────────────
 function createRoom(sala, body) {
@@ -364,32 +358,14 @@ function createRoom(sala, body) {
       p.textContent = sala.publica
         ? "la plaza es pública: cualquiera con la app entra. comparte la app, no hace falta clave."
         : "comparte este link por un canal de confianza. la clave va en el #, el servidor nunca la ve.";
-      const row = el("div", "invite-link");
-      const inp = el("input");
-      inp.type = "text";
-      inp.readOnly = true;
-      inp.value = link;
-      const copy = el("button");
-      copy.textContent = "copiar";
-      const ok = el("p", "copied hidden");
-      ok.textContent = "✓ copiado";
-      copy.addEventListener("click", async () => {
-        inp.select();
-        try {
-          await navigator.clipboard.writeText(link);
-        } catch {
-          document.execCommand("copy");
-        }
-        ok.classList.remove("hidden");
-      });
-      row.append(inp, copy);
+      const { row, ok, input } = inviteLinkField(link);
       b.append(p, row, ok);
       if (!sala.publica) {
         const warn = el("p", "warn");
         warn.textContent = "⚠ cualquiera con el link puede leer la sala. trátalo como una llave.";
         b.append(warn);
       }
-      setTimeout(() => inp.select(), 50);
+      setTimeout(() => input.select(), 50);
     });
   }
 

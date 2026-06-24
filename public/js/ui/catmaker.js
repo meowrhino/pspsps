@@ -2,10 +2,9 @@
 // rasgos + color. Guarda en vivo (cada cambio actualiza tu avatar en todas
 // partes vía el evento "identity-changed").
 import * as wm from "../wm.js";
+import { el } from "../util.js";
 import { CAT_OPTIONS, CAT_SWATCHES, catSvg, randomCatTraits, DEFAULT_CAT } from "../cat.js";
 import { me, updateCat, setAlias } from "../identity.js";
-
-const el = (tag, cls) => { const n = document.createElement(tag); if (cls) n.className = cls; return n; };
 
 export function openCatMaker() {
   wm.openWindow({ id: "catmaker", title: "tu minino", icon: "🐱", build: buildEditor });

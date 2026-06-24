@@ -1,7 +1,7 @@
 // salas.js — crear, invitar y unirse a salas. Una sala es un id ALEATORIO
 // (token opaco, así nadie la "adivina") + una clave AES compartida. La clave
 // viaja en el fragmento # del link de invitación: NUNCA llega al servidor.
-import { b64u, enc, dec, uuid } from "./util.js";
+import { b64u, enc, dec } from "./util.js";
 import { genKey, exportKey } from "./crypto.js";
 import * as db from "./db.js";
 
@@ -94,5 +94,3 @@ export async function joinSala({ s, k, n }) {
   await db.putSala(sala);
   return sala;
 }
-
-export { uuid };

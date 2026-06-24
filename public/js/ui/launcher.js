@@ -5,7 +5,7 @@ import { $, hhmm } from "../util.js";
 import * as db from "../db.js";
 import { createSala, joinSala, parseInvite, buildInviteLink, PLAZA } from "../salas.js";
 import { me } from "../identity.js";
-import { openModal, closeModal } from "./modal.js";
+import { openModal, closeModal, inviteLinkField } from "./modal.js";
 import * as contactos from "../contactos.js";
 import { openDMWith } from "./room.js";
 import { catSvg, decodeCat, DEFAULT_CAT } from "../cat.js";
@@ -147,28 +147,7 @@ function showInvite(body, sala) {
   $("#modal-title").textContent = "¡sala creada!";
   const p = document.createElement("p");
   p.textContent = "comparte este link por un canal de confianza. la clave va en el #, el servidor nunca la ve.";
-  const link = buildInviteLink(sala);
-  const row = document.createElement("div");
-  row.className = "invite-link";
-  const input = document.createElement("input");
-  input.type = "text";
-  input.readOnly = true;
-  input.value = link;
-  const copy = document.createElement("button");
-  copy.textContent = "copiar";
-  const ok = document.createElement("p");
-  ok.className = "copied hidden";
-  ok.textContent = "✓ copiado";
-  copy.addEventListener("click", async () => {
-    input.select();
-    try {
-      await navigator.clipboard.writeText(link);
-    } catch {
-      document.execCommand("copy");
-    }
-    ok.classList.remove("hidden");
-  });
-  row.append(input, copy);
+  const { row, ok, input } = inviteLinkField(buildInviteLink(sala));
   const enterRow = document.createElement("div");
   enterRow.className = "modal-row";
   const enter = document.createElement("button");

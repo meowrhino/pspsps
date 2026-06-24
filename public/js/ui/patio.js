@@ -6,6 +6,7 @@
 // Reusa el motor de salas: el patio es una "sala" (un DO) que solo mueve perfiles
 // (gatos), presencia y posiciones (efímeras). No guarda mensajes.
 import * as wm from "../wm.js";
+import { el } from "../util.js";
 import { connectRoom } from "../ws.js";
 import { catSvg, encodeCat, decodeCat } from "../cat.js";
 import { me } from "../identity.js";
@@ -24,8 +25,6 @@ export function openPatio() {
     onClose: () => { ctrl?.destroy(); ctrl = null; },
   });
 }
-
-const el = (tag, cls) => { const n = document.createElement(tag); if (cls) n.className = cls; return n; };
 
 function buildPatio(body) {
   const state = { conn: null, cats: {}, pubs: {}, pos: {}, online: [], els: new Map() };

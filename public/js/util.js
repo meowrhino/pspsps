@@ -3,6 +3,13 @@
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
+// Crea un elemento con clase opcional (helper compartido por las vistas).
+export const el = (tag, cls) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  return n;
+};
+
 // uuid v4 (idempotencia de mensajes). crypto.randomUUID existe en todos los
 // navegadores con WebCrypto (los mismos donde corre esta PWA).
 export const uuid = () => crypto.randomUUID();
