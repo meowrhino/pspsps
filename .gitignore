@@ -1,0 +1,9 @@
+node_modules/
+.wrangler/
+.dev.vars
+dist/
+*.log
+.DS_Store
+.claude/
+# artefacto de research interno (se queda en local, no en el repo público)
+compass_artifact_*.md
