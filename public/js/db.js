@@ -121,14 +121,18 @@ export async function getMessages(sala) {
 }
 
 // Inserta o actualiza un mensaje (idempotente por id). Devuelve true si era nuevo.
+// Una sola transacción readwrite (get + put atómicos): antes abría dos.
 export async function putMessage(msg) {
-  const existing = await tx("mensajes", "readonly", (t) =>
-    done(t.objectStore("mensajes").get(msg.id)),
-  );
-  await tx("mensajes", "readwrite", (t) =>
-    t.objectStore("mensajes").put({ ...(existing || {}), ...msg }),
-  );
-  return !existing;
+  let isNew = false;
+  await tx("mensajes", "readwrite", (t) => {
+    const store = t.objectStore("mensajes");
+    const g = store.get(msg.id);
+    g.onsuccess = () => {
+      isNew = !g.result;
+      store.put({ ...(g.result || {}), ...msg });
+    };
+  });
+  return isNew;
 }
 
 // Cola de salida: mensajes míos aún sin confirmar por el servidor (compuestos
