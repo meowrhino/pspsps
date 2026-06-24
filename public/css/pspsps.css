@@ -283,6 +283,119 @@ button.ghost:hover { color: var(--text); background: var(--surface-2); }
 .warn { color: var(--accent); font-size: .72rem; margin-top: .8rem; }
 .copied { color: var(--online); font-size: .72rem; margin-top: .4rem; }
 
+/* pie del menú del lanzador (toggle de tema) */
+.lm-foot { padding: .5rem .8rem; border-top: 1px solid var(--hairline); }
+.lm-foot button { width: 100%; font-size: .74rem; padding: .4rem; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TEMA "XP CÁLIDO" — la calidez de Windows XP (glossy, redondeado, acogedor)
+   en la paleta meowrhino (negro cálido + dorado). Conmutable desde el menú.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* escritorio: viñeta cálida tipo "bliss" + puntitos más cálidos */
+.theme-xp body::before,
+body.theme-xp::before {
+  background-image:
+    radial-gradient(ellipse 92% 78% at 50% 24%, #1d1610 0%, #120f0a 55%, #080605 100%),
+    radial-gradient(#241a10 1px, transparent 1px);
+  background-size: auto, 22px 22px;
+}
+
+/* ventanas: esquinas redondeadas, borde cálido, sombra honda */
+.theme-xp .win {
+  border-radius: 10px 10px 7px 7px;
+  border: 1px solid #0c0906;
+  box-shadow: 0 14px 50px rgba(0, 0, 0, .62), 0 0 0 1px rgba(255, 220, 150, .05);
+}
+/* barra de título INACTIVA (ventana de fondo) */
+.theme-xp .win-bar {
+  background: linear-gradient(#3a322a, #2a241d);
+  border-bottom: 1px solid #14100b;
+  box-shadow: inset 0 1px 0 rgba(255, 220, 150, .08);
+  padding: .5rem .55rem .5rem .8rem;
+}
+.theme-xp .win-title { color: #9a8e76; text-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
+/* barra de título ACTIVA (ventana enfocada) — el dorado glossy de XP */
+.theme-xp .win.front .win-bar {
+  background: linear-gradient(#f5cd72 0%, #e6ab3c 48%, #d2922a 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), inset 0 -1px 0 rgba(0, 0, 0, .15);
+}
+.theme-xp .win.front .win-title { color: #3a2608; text-shadow: 0 1px 0 rgba(255, 255, 255, .35); }
+.theme-xp .win.front .win-ic { filter: none; }
+
+/* botones de ventana (minimizar/cerrar) tipo XP */
+.theme-xp .win-btn {
+  border-radius: 5px;
+  background: rgba(255, 255, 255, .14);
+  border: 1px solid rgba(0, 0, 0, .18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35);
+  color: #2a1c06;
+}
+.theme-xp .win:not(.front) .win-btn { background: rgba(255, 255, 255, .06); color: var(--text-dim); }
+.theme-xp .win-btn:hover { background: rgba(255, 255, 255, .3); }
+.theme-xp .win-ctrls .win-btn:last-child {
+  background: linear-gradient(#ec8460, #c0432a);
+  color: #fff; border-color: rgba(0, 0, 0, .25);
+}
+.theme-xp .win-ctrls .win-btn:last-child:hover { background: linear-gradient(#f29478, #d24e32); color: #fff; }
+
+/* botones dorados glossy */
+.theme-xp button {
+  border-radius: 8px;
+  background: linear-gradient(#f5cd72, #e3a838 55%, #cf9326);
+  color: #3a2608;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 1px 2px rgba(0, 0, 0, .35);
+}
+.theme-xp button:hover { background: linear-gradient(#f8d585, #e8b04a 55%, #d89a2e); }
+.theme-xp button.ghost {
+  background: linear-gradient(#2e2820, #211b15);
+  color: var(--text-dim);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+  border: 1px solid #14100b;
+}
+.theme-xp button.ghost:hover { background: linear-gradient(#3a3228, #2a241d); color: var(--text); }
+.theme-xp input[type="text"], .theme-xp textarea {
+  border-radius: 7px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .4);
+}
+
+/* dock = barra de tareas glossy */
+.theme-xp #dock {
+  height: 58px;
+  background: linear-gradient(#34280f 0%, #271c0f 10%, #1c140d 100%);
+  border-top: 1px solid #4a3a1e;
+  box-shadow: inset 0 1px 0 rgba(255, 220, 150, .22);
+}
+/* el lanzador = botón de inicio (glossy, redondo, en cursiva como el "start") */
+.theme-xp .launch {
+  border-radius: 18px;
+  background: linear-gradient(#f8d585, #e6ab3c 50%, #cf9326);
+  color: #3a2608;
+  font-style: italic;
+  padding: .5rem 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 2px 5px rgba(0, 0, 0, .45);
+}
+.theme-xp .task {
+  border-radius: 7px;
+  background: linear-gradient(#3a2e1c, #281e10);
+  border: 1px solid #4a3a1e;
+  color: #d8c8a8;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+.theme-xp .task.front {
+  background: linear-gradient(#241a0e, #34280f);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, .55);
+  color: #f0c878;
+  border-color: #5a4622;
+}
+
+/* burbujas propias con brillo cálido */
+.theme-xp .bubble.mine { background: linear-gradient(#f5cd72, #e3a838); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4); }
+
+/* menú, tarjeta, modal: esquinas redondeadas y borde cálido */
+.theme-xp .launcher-menu, .theme-xp .card, .theme-xp .modal-card { border-radius: 10px; border-color: #4a3a1e; }
+.theme-xp .lm-head { background: linear-gradient(#34280f, #241a0e); }
+
 /* ── móvil: las ventanas se maximizan; el dock cambia entre ellas ─────────── */
 @media (max-width: 640px) {
   .win {

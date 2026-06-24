@@ -25,6 +25,13 @@ function renderAvatars() {
   if (ma) ma.innerHTML = svg;
 }
 
+// tema: "xp" (calidez Windows XP, por defecto) o "clasico" (limpio)
+function applyTheme(theme) {
+  document.body.classList.toggle("theme-xp", theme === "xp");
+  const btn = $("#theme-toggle");
+  if (btn) btn.textContent = theme === "xp" ? "tema: clásico" : "tema: XP cálido";
+}
+
 async function enterDesktop() {
   $("#boot").classList.add("hidden");
   $("#desktop").classList.remove("hidden");
@@ -39,6 +46,15 @@ async function enterDesktop() {
   document.addEventListener("identity-changed", () => {
     renderAvatars();
     setColorAll(identity.me().color);
+  });
+
+  // tema (calidez XP por defecto)
+  let theme = localStorage.getItem("theme") || "xp";
+  applyTheme(theme);
+  $("#theme-toggle").addEventListener("click", () => {
+    theme = theme === "xp" ? "clasico" : "xp";
+    localStorage.setItem("theme", theme);
+    applyTheme(theme);
   });
 
   // web push

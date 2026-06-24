@@ -129,8 +129,10 @@ export function openWindow({ id, title, icon = "", pinned = false, build, onClos
 
 function syncChips() {
   for (const [, w] of wins) {
+    const front = !w.minimized && Number(w.el.style.zIndex) === zTop;
     w.chip.classList.toggle("min", w.minimized);
-    w.chip.classList.toggle("front", !w.minimized && Number(w.el.style.zIndex) === zTop);
+    w.chip.classList.toggle("front", front);
+    w.el.classList.toggle("front", front); // ventana enfocada (barra activa, estilo XP)
   }
 }
 
