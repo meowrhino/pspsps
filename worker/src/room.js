@@ -216,16 +216,29 @@ export class RoomDO extends DurableObject {
     } catch {
       return;
     }
+    // Un fallo procesando un mensaje no debe tumbar la conexión ni desconectar
+    // al cliente: lo aislamos.
+    try {
+      this.handle(ws, data);
+    } catch (e) {
+      console.error("pspsps DO: error procesando mensaje", e);
+    }
+  }
 
+  handle(ws, data) {
     const att = ws.deserializeAttachment();
     const name = att?.name ?? "anon";
     const ip = att?.ip ?? "local";
 
-    // Movimiento en el patio: efímero (NO se guarda) y muy frecuente → se reenvía
-    // a los demás sin pasar por el rate-limit de mensajes. Coordenadas 0..1.
+    // Movimiento en el patio: efímero (NO se guarda) y frecuente → se reenvía a
+    // los demás sin pasar por el rate-limit de mensajes, pero con throttle por
+    // socket (~11 Hz) para que nadie inunde la sala. Coordenadas 0..1.
     if (data.type === "move") {
       const x = Number(data.x), y = Number(data.y);
       if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      const t = Date.now();
+      if (att?.lastMove && t - att.lastMove < 90) return;
+      ws.serializeAttachment({ ...att, lastMove: t });
       this.broadcastExcept(
         ws,
         JSON.stringify({ type: "move", name, x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) }),
@@ -350,16 +363,17 @@ export class RoomDO extends DurableObject {
     for (const s of subs) {
       if (s.name && online.has(s.name)) continue; // está en la sala, ya lo ve
       if (s.lastPush && now - s.lastPush < PUSH_THROTTLE) continue; // throttle
-      // marca antes de enviar para que mensajes en ráfaga no dupliquen el push
-      this.ctx.storage.sql.exec("UPDATE subs SET lastPush = ? WHERE endpoint = ?", now, s.endpoint);
       try {
         const status = await sendPush(this.env, s, { sala: roomId });
-        // suscripción caducada/baja → bórrala para no reintentar
         if (status === 404 || status === 410) {
+          // suscripción caducada/baja → bórrala para no reintentar
           this.ctx.storage.sql.exec("DELETE FROM subs WHERE endpoint = ?", s.endpoint);
+        } else if (status >= 200 && status < 300) {
+          // marca el throttle SOLO si el push llegó (si falla, se reintenta)
+          this.ctx.storage.sql.exec("UPDATE subs SET lastPush = ? WHERE endpoint = ?", now, s.endpoint);
         }
       } catch {
-        /* fallo de red puntual; se reintentará en el próximo mensaje */
+        /* fallo de red puntual; sin marcar lastPush → se reintenta en el próximo mensaje */
       }
     }
   }
