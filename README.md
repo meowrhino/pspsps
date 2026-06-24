@@ -28,6 +28,10 @@ Firebase, nada de SDKs propietarios). Fusiona el motor de salas de
   (WebSocket Hibernation API → cero consumo en reposo). Push = Web Push + VAPID propio.
 - **Vanilla.** HTML + CSS + JS con ES modules nativos. Sin React, sin build step, sin
   bundler. El Worker es JS puro también.
+- **Pseudo-escritorio.** No es una pantalla apilada de arriba abajo: es un pequeño
+  escritorio donde cada sala es una **ventana** flotante (estilo rumrum) que arrastras,
+  minimizas al dock o cierras. La **plaza pública** va anclada: siempre abierta para todo
+  el colectivo. En móvil las ventanas se maximizan y el dock cambia entre ellas.
 
 ## arquitectura
 
@@ -57,15 +61,18 @@ public/                ← front 100% estático (lo sirve el Worker vía [assets
   index.html
   css/pspsps.css
   js/
-    app.js             ← bootstrap + router de vistas (#/  #/sala/<id>  #/join)
+    app.js             ← bootstrap: puerta de identidad → escritorio
+    wm.js              ← window manager (ventanas flotantes, dock, minimizar)
     identity.js        ← "¿quién eres?" (alias local, sin contraseña)
     db.js              ← IndexedDB (salas, mensajes, identidad, pushSub)
     crypto.js          ← AES-GCM por sala (zero-knowledge)
     ws.js              ← WebSocket con reconexión/backoff + cola offline
-    salas.js           ← crear / invitar / unirse (clave en el #)
+    salas.js           ← crear / invitar / unirse (clave en el #) + plaza pública
     push.js            ← suscripción Web Push (cliente)
     alerts.js          ← sonido + badge + notificación
-    ui/{list,room,modal}.js
+    ui/launcher.js     ← menú del dock (salas, nueva, unirme, identidad)
+    ui/room.js         ← una sala como ventana (multi-instancia)
+    ui/modal.js
   sw.js                ← service worker (cache shell + handlers push)
   manifest.webmanifest
   icons/               ← gato pixel-art (placeholder, regenerable)

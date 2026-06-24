@@ -87,10 +87,14 @@ Marca `[x]` al completar y commitea la actualización de este archivo.
 - **deploy:** usuarios soberanos, sin servidor de cuentas.
 
 ## fase 5 — pulido + opcionales
+- [x] **pseudo-escritorio de ventanas** (window manager): salas como ventanas flotantes
+      arrastrables, minimizables al dock; responsive (maximizan en móvil)
+- [x] **plaza pública** anclada (id+clave conocidos): sala común siempre abierta
 - [ ] presencia "escribiendo…" — extender el protocolo `presence`
 - [x] mascota gato pixel-art (placeholder generado en `tools/make-icons.mjs` — sustituir por el tuyo)
 - [ ] transferencia de ficheros (¿P2P WebRTC entre dos pares online?)
 - [ ] sonidos (el "pspsps" real como notificación)
+- [ ] recordar posición/tamaño de las ventanas entre sesiones
 
 ---
 
