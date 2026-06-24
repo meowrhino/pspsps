@@ -14,6 +14,7 @@ import * as alerts from "./alerts.js";
 import * as push from "./push.js";
 import { catSvg } from "./cat.js";
 import { openCatMaker } from "./ui/catmaker.js";
+import { openPatio } from "./ui/patio.js";
 
 let pendingInvite = null;
 
@@ -43,6 +44,10 @@ async function enterDesktop() {
   // el menú. Al cambiarlo, repintamos y propagamos el color a las salas abiertas.
   renderAvatars();
   $("#edit-cat").addEventListener("click", openCatMaker);
+  $("#open-patio").addEventListener("click", () => {
+    $("#launcher-menu").classList.add("hidden");
+    openPatio();
+  });
   document.addEventListener("identity-changed", () => {
     renderAvatars();
     broadcastProfileAll();

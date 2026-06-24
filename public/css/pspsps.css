@@ -140,6 +140,40 @@ button.ghost:hover { color: var(--text); background: var(--surface-2); }
 .cm-actions { display: flex; gap: .5rem; margin-top: 1rem; }
 .cm-actions button { flex: 1; }
 
+/* ── el patio (espacio caminable) ─────────────────────────────────────────── */
+.patio-floor {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  cursor: crosshair;
+  background:
+    radial-gradient(ellipse 130% 90% at 50% 125%, #33422a 0%, #1d271a 42%, #12160f 100%),
+    radial-gradient(var(--dots) 1px, transparent 1px);
+  background-size: auto, 20px 20px;
+}
+.patio-hint {
+  position: absolute; top: 8px; left: 0; right: 0; text-align: center;
+  color: var(--muted); font-size: .64rem; pointer-events: none; z-index: 9999;
+}
+.patio-cat {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  transition: left .45s ease, top .45s ease;
+  cursor: pointer;
+  width: 50px;
+}
+.patio-cat-sprite { width: 44px; height: 44px; margin: 0 auto; }
+.patio-cat:hover .patio-cat-sprite { filter: brightness(1.15); }
+.patio-cat-label {
+  font-size: .58rem; color: var(--text-dim);
+  background: rgba(13, 12, 10, .72); border-radius: 4px; padding: 0 .25rem;
+  white-space: nowrap; max-width: 70px; overflow: hidden; text-overflow: ellipsis;
+  margin: .1rem auto 0; width: fit-content;
+}
+.patio-cat.me .patio-cat-label { color: var(--accent); }
+.patio-cat.me .patio-cat-sprite { filter: drop-shadow(0 0 5px rgba(232, 176, 74, .55)); }
+
 /* ── escritorio ───────────────────────────────────────────────────────────── */
 #desktop { position: fixed; inset: 0; overflow: hidden; }
 
