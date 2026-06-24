@@ -101,14 +101,20 @@ export class RoomDO extends DurableObject {
           kind   TEXT    NOT NULL DEFAULT 'user'
         );
       `);
-      // Perfiles: color "sticky" por alias (el color no es secreto; es metadato
-      // de presentación). Se fija al crear y solo cambia con {type:"color"}.
+      // Perfiles por alias (metadatos de presentación, no secretos): color, el
+      // gato (cat.js, codificado) y la clave pública ECDH (pk, para DMs del
+      // patio). Se actualizan al conectar y con {type:"setprofile"}.
       sql.exec(`
         CREATE TABLE IF NOT EXISTS profiles (
           name  TEXT PRIMARY KEY,
-          color TEXT NOT NULL
+          color TEXT NOT NULL,
+          cat   TEXT,
+          pk    TEXT
         );
       `);
+      // Migración para salas que crearon `profiles` sin cat/pk.
+      try { sql.exec("ALTER TABLE profiles ADD COLUMN cat TEXT"); } catch { /* existe */ }
+      try { sql.exec("ALTER TABLE profiles ADD COLUMN pk TEXT"); } catch { /* existe */ }
       // Suscripciones Web Push de los miembros. Se rellena con {type:"sub"}; el DO
       // la usa para avisar a quien está sin WS activo. `lastPush` da el throttle.
       sql.exec(`
@@ -149,6 +155,8 @@ export class RoomDO extends DurableObject {
     const url = new URL(request.url);
     const name = (url.searchParams.get("name") || "anon").slice(0, 25) || "anon";
     const color = cleanColor(url.searchParams.get("color")) ?? defaultColor(name);
+    const cat = (url.searchParams.get("cat") || "").slice(0, 80) || null;
+    const pk = (url.searchParams.get("pk") || "").slice(0, 120) || null;
     const ip = request.headers.get("CF-Connecting-IP") || "local";
     // Cursor de backfill: el cliente manda el `seq` más alto que ya tiene en su
     // IndexedDB para esta sala. 0/ausente → le mandamos el snapshot reciente.
@@ -163,13 +171,13 @@ export class RoomDO extends DurableObject {
       );
     }
 
-    // Fija el color solo la primera vez que aparece este alias.
-    this.touchProfile(name, color);
+    // Registra/actualiza el perfil (color, gato, clave pública) de este alias.
+    this.touchProfile(name, color, cat, pk);
 
     const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server); // hibernable
     // Estado que sobrevive a la hibernación, atado a la conexión (máx 16 KB).
-    server.serializeAttachment({ name, color, ip });
+    server.serializeAttachment({ name, color, ip, cat, pk });
 
     // Snapshot inicial: lo que el cliente se perdió + colores + quién está en
     // línea. Con `since` manda solo lo nuevo (catch-up offline); sin él, los
@@ -187,11 +195,14 @@ export class RoomDO extends DurableObject {
       }),
     );
 
-    // Difunde el color REAL (sticky) de quien entra y la presencia actualizada.
-    const stored = this.ctx.storage.sql
-      .exec("SELECT color FROM profiles WHERE name = ?", name)
-      .toArray();
-    this.broadcast(JSON.stringify({ type: "color", name, color: stored[0]?.color ?? color }));
+    // Difunde el perfil de quien entra (color + gato + clave pública) y la
+    // presencia actualizada, para que todos lo pinten al instante.
+    const row = this.ctx.storage.sql
+      .exec("SELECT color, cat, pk FROM profiles WHERE name = ?", name)
+      .toArray()[0];
+    this.broadcast(
+      JSON.stringify({ type: "profile", name, color: row?.color ?? color, cat: row?.cat ?? "", pk: row?.pk ?? "" }),
+    );
     this.broadcastPresence();
 
     return new Response(null, { status: 101, webSocket: client });
@@ -210,27 +221,39 @@ export class RoomDO extends DurableObject {
     const name = att?.name ?? "anon";
     const ip = att?.ip ?? "local";
 
+    // Movimiento en el patio: efímero (NO se guarda) y muy frecuente → se reenvía
+    // a los demás sin pasar por el rate-limit de mensajes. Coordenadas 0..1.
+    if (data.type === "move") {
+      const x = Number(data.x), y = Number(data.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      this.broadcastExcept(
+        ws,
+        JSON.stringify({ type: "move", name, x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) }),
+      );
+      return;
+    }
+
     // Rate-limit por IP: si va por encima del presupuesto, descartamos en
-    // silencio (vale para mensajes, colores y suscripciones).
+    // silencio (vale para mensajes, perfiles y suscripciones).
     if (!this.allow(ip)) return;
 
-    // Cambio de color: persiste y difunde para que TODOS recoloreen los
-    // mensajes de esta persona (incluido el historial ya pintado).
-    if (data.type === "color") {
-      const color = cleanColor(data.color);
-      if (!color) return;
-      const cur = this.ctx.storage.sql
-        .exec("SELECT color FROM profiles WHERE name = ?", name)
-        .toArray();
-      if (cur.length && cur[0].color === color) return; // no-op (picker arrastra)
+    // Cambio de perfil (color o gato): persiste y difunde para que todos
+    // repinten a esta persona (nombre, gato, burbujas).
+    if (data.type === "setprofile") {
+      const color = cleanColor(data.color) || att?.color || defaultColor(name);
+      const cat = typeof data.cat === "string" ? data.cat.slice(0, 80) : att?.cat ?? null;
       this.ctx.storage.sql.exec(
-        `INSERT INTO profiles (name, color) VALUES (?, ?)
-         ON CONFLICT(name) DO UPDATE SET color = excluded.color`,
+        `INSERT INTO profiles (name, color, cat) VALUES (?, ?, ?)
+         ON CONFLICT(name) DO UPDATE SET color = excluded.color, cat = COALESCE(excluded.cat, profiles.cat)`,
         name,
         color,
+        cat,
       );
-      ws.serializeAttachment({ ...att, color });
-      this.broadcast(JSON.stringify({ type: "color", name, color }));
+      ws.serializeAttachment({ ...att, color, cat });
+      const row = this.ctx.storage.sql
+        .exec("SELECT color, cat, pk FROM profiles WHERE name = ?", name)
+        .toArray()[0];
+      this.broadcast(JSON.stringify({ type: "profile", name, color: row?.color ?? color, cat: row?.cat ?? "", pk: row?.pk ?? "" }));
       return;
     }
 
@@ -370,13 +393,19 @@ export class RoomDO extends DurableObject {
     this.broadcast(JSON.stringify({ type: "presence", online: this.onlineNames(exclude) }));
   }
 
-  // Crea el perfil con su color la primera vez; en reconexiones NO lo pisa (el
-  // color solo cambia luego vía {type:"color"}, que sí se difunde).
-  touchProfile(name, color) {
+  // Registra/actualiza el perfil al conectar: color y gato siguen lo actual; la
+  // clave pública (pk) se conserva si ya la teníamos (COALESCE no la pisa con "").
+  touchProfile(name, color, cat, pk) {
     this.ctx.storage.sql.exec(
-      "INSERT INTO profiles (name, color) VALUES (?, ?) ON CONFLICT(name) DO NOTHING",
+      `INSERT INTO profiles (name, color, cat, pk) VALUES (?, ?, ?, ?)
+       ON CONFLICT(name) DO UPDATE SET
+         color = excluded.color,
+         cat = COALESCE(excluded.cat, profiles.cat),
+         pk  = COALESCE(excluded.pk, profiles.pk)`,
       name,
       color,
+      cat || null,
+      pk || null,
     );
   }
 
@@ -404,10 +433,21 @@ export class RoomDO extends DurableObject {
     }
   }
 
+  broadcastExcept(self, blob) {
+    for (const peer of this.ctx.getWebSockets()) {
+      if (peer === self) continue;
+      try {
+        peer.send(blob);
+      } catch {
+        // peer muerto
+      }
+    }
+  }
+
   profiles() {
     const out = {};
-    for (const p of this.ctx.storage.sql.exec("SELECT name, color FROM profiles").toArray()) {
-      out[p.name] = p.color;
+    for (const p of this.ctx.storage.sql.exec("SELECT name, color, cat, pk FROM profiles").toArray()) {
+      out[p.name] = { color: p.color, cat: p.cat || "", pk: p.pk || "" };
     }
     return out;
   }

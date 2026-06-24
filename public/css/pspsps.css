@@ -204,6 +204,10 @@ button.ghost:hover { color: var(--text); background: var(--surface-2); }
 .bubble.mine .meta-line { text-align: right; }
 .bubble.theirs { align-self: flex-start; border-bottom-left-radius: 4px; background: var(--surface-2); color: var(--text); }
 .bubble.theirs .author { font-weight: 600; display: block; font-size: .7rem; margin-bottom: .08rem; }
+.bubble.theirs .bubble-head { display: flex; align-items: center; gap: .3rem; margin-bottom: .12rem; }
+.bubble.theirs .bubble-head .author { display: inline; margin: 0; }
+.mini-cat { width: 18px; height: 18px; flex-shrink: 0; }
+.mini-cat svg, .patio-cat svg { width: 100%; height: 100%; display: block; }
 .bubble.pending { opacity: .6; }
 .bubble.undecryptable { background: var(--hairline); color: var(--muted); font-style: italic; }
 .daysep { display: flex; align-items: center; gap: .6rem; align-self: stretch; margin: .4rem 0; color: var(--muted); font-size: .66rem; }

@@ -12,13 +12,15 @@ import { me } from "../identity.js";
 import { openModal } from "./modal.js";
 import { buildInviteLink } from "../salas.js";
 import { currentSub } from "../push.js";
+import { catSvg, encodeCat, decodeCat } from "../cat.js";
 import * as wm from "../wm.js";
 
 const openRooms = new Map(); // sala.id → controlador
 
-// Aplica un cambio de color a todas las salas abiertas (el color es global).
-export function setColorAll(color) {
-  for (const ctrl of openRooms.values()) ctrl.setColor(color);
+// Reenvía el perfil actual (color + gato) a todas las salas abiertas. Lo llama
+// app.js cuando cambias tu gato/color, para que el resto te repinte.
+export function broadcastProfileAll() {
+  for (const ctrl of openRooms.values()) ctrl.sendProfile();
 }
 
 // Abre (o enfoca) la ventana de una sala.
@@ -49,7 +51,7 @@ const el = (tag, cls) => {
 
 // ── un controlador de sala, atado a su `body` de ventana ────────────────────
 function createRoom(sala, body) {
-  const state = { key: null, conn: null, colors: {}, online: [], msgs: [], rendered: new Map(), lastDay: null };
+  const state = { key: null, conn: null, colors: {}, cats: {}, pubs: {}, online: [], msgs: [], rendered: new Map(), lastDay: null };
   const colorOf = (name) => state.colors[name] || colorFor(name);
 
   // DOM de la ventana
@@ -111,10 +113,12 @@ function createRoom(sala, body) {
       room: sala.id,
       name: m.alias,
       color: m.color,
+      cat: encodeCat(m.cat),
+      pk: m.keys?.pubRaw || "",
       getCursor: () => sala.ultimoSeq || 0,
       onStatus: setConn,
       onHistory: (messages, profiles, online, minSeq) => {
-        state.colors = { ...state.colors, ...profiles };
+        mergeProfiles(profiles);
         state.online = online;
         const cursor = sala.ultimoSeq || 0;
         if (minSeq && cursor > 0 && minSeq > cursor + 1) {
@@ -124,9 +128,11 @@ function createRoom(sala, body) {
         paintPresence();
       },
       onMessage: (sm) => ingestBatch([sm], { live: true }),
-      onColor: ({ name, color }) => {
-        state.colors[name] = color;
-        recolor(name, color);
+      onProfile: ({ name, color, cat, pk }) => {
+        if (color) state.colors[name] = color;
+        if (cat) state.cats[name] = decodeCat(cat);
+        if (pk) state.pubs[name] = pk;
+        repaintAuthor(name);
         paintPresence();
       },
       onPresence: (online) => {
@@ -257,10 +263,15 @@ function createRoom(sala, body) {
     if (msg.undecryptable) li.classList.add("undecryptable");
     li.dataset.author = msg.autor;
     if (!msg.mio) {
+      const head = el("span", "bubble-head");
+      const mini = el("span", "mini-cat");
+      const traits = state.cats[msg.autor];
+      if (traits) mini.innerHTML = catSvg(traits);
       const author = el("span", "author");
       author.textContent = msg.autor;
       author.style.color = colorOf(msg.autor);
-      li.appendChild(author);
+      head.append(mini, author);
+      li.appendChild(head);
     }
     const text = el("span", "text");
     linkifyInto(text, msg.texto || "");
@@ -277,12 +288,25 @@ function createRoom(sala, body) {
     if (meta) meta.textContent = hhmm(msg.ts) + (msg.pendiente ? " · enviando…" : "");
   }
 
-  function recolor(name, color) {
+  function mergeProfiles(profiles) {
+    for (const [name, p] of Object.entries(profiles || {})) {
+      if (!p) continue;
+      if (p.color) state.colors[name] = p.color;
+      if (p.cat) state.cats[name] = decodeCat(p.cat);
+      if (p.pk) state.pubs[name] = p.pk;
+    }
+  }
+
+  // repinta el nombre (color) y el mini-gato del autor en sus burbujas ya pintadas
+  function repaintAuthor(name) {
+    const color = colorOf(name);
+    const traits = state.cats[name];
     for (const li of messages.querySelectorAll(".bubble.theirs")) {
-      if (li.dataset.author === name) {
-        const a = li.querySelector(".author");
-        if (a) a.style.color = color;
-      }
+      if (li.dataset.author !== name) continue;
+      const a = li.querySelector(".author");
+      if (a) a.style.color = color;
+      const mc = li.querySelector(".mini-cat");
+      if (mc && traits) mc.innerHTML = catSvg(traits);
     }
   }
 
@@ -358,5 +382,8 @@ function createRoom(sala, body) {
     state.conn?.close();
   }
 
-  return { destroy, setColor: (c) => state.conn?.setColor(c) };
+  return {
+    destroy,
+    sendProfile: () => state.conn?.setProfile({ color: me().color, cat: encodeCat(me().cat) }),
+  };
 }

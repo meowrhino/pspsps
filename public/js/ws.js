@@ -14,7 +14,7 @@ const MIN_BACKOFF = 500;
 const MAX_BACKOFF = 15000;
 
 export function connectRoom(opts) {
-  const { room, name, color, getCursor, onHistory, onMessage, onColor, onPresence, onStatus } = opts;
+  const { room, name, color, cat, pk, getCursor, onHistory, onMessage, onProfile, onPresence, onMove, onStatus } = opts;
 
   let ws = null;
   let closed = false; // cerrado a propósito (no reconectar)
@@ -31,6 +31,8 @@ export function connectRoom(opts) {
       `?room=${encodeURIComponent(room)}` +
       `&name=${encodeURIComponent(name)}` +
       `&color=${encodeURIComponent(color)}` +
+      `&cat=${encodeURIComponent(cat || "")}` +
+      `&pk=${encodeURIComponent(pk || "")}` +
       `&since=${encodeURIComponent(since)}`
     );
   }
@@ -58,10 +60,12 @@ export function connectRoom(opts) {
         onHistory?.(data.messages || [], data.profiles || {}, data.online || [], data.minSeq || 0);
       } else if (data.type === "msg") {
         onMessage?.(data);
-      } else if (data.type === "color") {
-        onColor?.(data);
+      } else if (data.type === "profile") {
+        onProfile?.(data);
       } else if (data.type === "presence") {
         onPresence?.(data.online || []);
+      } else if (data.type === "move") {
+        onMove?.(data);
       }
     };
 
@@ -97,8 +101,11 @@ export function connectRoom(opts) {
     send(msg) {
       rawSend({ type: "msg", id: msg.id, ts: msg.ts, blob: msg.blob });
     },
-    setColor(color) {
-      rawSend({ type: "color", color });
+    setProfile(p) {
+      rawSend({ type: "setprofile", color: p.color, cat: p.cat });
+    },
+    move(x, y) {
+      rawSend({ type: "move", x, y });
     },
     sub(subscription) {
       rawSend({ type: "sub", ...subscription });

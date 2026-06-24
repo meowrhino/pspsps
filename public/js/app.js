@@ -8,7 +8,7 @@ import { $ } from "./util.js";
 import * as db from "./db.js";
 import * as identity from "./identity.js";
 import * as launcher from "./ui/launcher.js";
-import { openRoomWindow, setColorAll } from "./ui/room.js";
+import { openRoomWindow, broadcastProfileAll } from "./ui/room.js";
 import { joinSala, parseInvite, ensurePlaza } from "./salas.js";
 import * as alerts from "./alerts.js";
 import * as push from "./push.js";
@@ -45,7 +45,7 @@ async function enterDesktop() {
   $("#edit-cat").addEventListener("click", openCatMaker);
   document.addEventListener("identity-changed", () => {
     renderAvatars();
-    setColorAll(identity.me().color);
+    broadcastProfileAll();
   });
 
   // tema (calidez XP por defecto)
